@@ -9,7 +9,9 @@ from rich.table import Table
 
 from .analyzer import analyze
 from .client import MetaAdLibraryClient, MetaAdLibraryError
+from .csv_loader import CsvLoaderError, load_ads_from_csv
 from .models import Ad, MarketAnalysis
+from .scraper import MetaAdLibraryScraper, ScraperError
 
 console = Console()
 
@@ -61,6 +63,57 @@ def search(query: str, country: str, active: bool, max_pages: int, limit: int, e
     if export:
         _export_ads(ads, Path(export))
         console.print(f"\n[dim]Exportado a {export}[/dim]")
+
+
+@cli.command()
+@click.argument("query")
+@click.option("--country", "-c", default="CO", help="Codigo ISO del pais.")
+@click.option("--active/--all", default=True, help="Solo anuncios activos o todos.")
+@click.option("--max-pages", default=3, type=int)
+@click.option("--export", type=click.Path(), help="Exportar anuncios a JSON.")
+def scrape(query: str, country: str, active: bool, max_pages: int, export: str):
+    """Scraping directo del Ad Library publico (sin token). Best-effort."""
+    scraper = MetaAdLibraryScraper()
+    with console.status(f"Scrapeando '{query}' en {country}..."):
+        try:
+            ads = list(scraper.search(query=query, country=country, active=active, max_pages=max_pages))
+        except ScraperError as e:
+            console.print(f"[red]Scraper fallo:[/red] {e}")
+            console.print(
+                "[yellow]Alternativa:[/yellow] usa 'analyze-csv' con datos exportados "
+                "desde una extension de Chrome tipo Ad Library Data Extractor."
+            )
+            sys.exit(1)
+
+    console.print(f"[green]OK[/green] {len(ads)} anuncios encontrados.\n")
+    analysis = analyze(ads, query=query, country=country)
+    _render_analysis(analysis)
+    _render_top_ads(ads)
+    if export:
+        _export_ads(ads, Path(export))
+        console.print(f"\n[dim]Exportado a {export}[/dim]")
+
+
+@cli.command(name="analyze-csv")
+@click.argument("csv_path", type=click.Path(exists=True, dir_okay=False))
+@click.option("--query", default="(csv)", help="Etiqueta de la busqueda.")
+@click.option("--country", "-c", default="CO", help="Pais analizado.")
+def analyze_csv(csv_path: str, query: str, country: str):
+    """Analiza anuncios desde un CSV exportado manualmente.
+
+    Formato esperado: columnas como page_name, start_date, copy, etc.
+    Sirve cualquier CSV exportado de extensiones del Ad Library.
+    """
+    try:
+        ads = load_ads_from_csv(Path(csv_path))
+    except CsvLoaderError as e:
+        console.print(f"[red]Error cargando CSV:[/red] {e}")
+        sys.exit(1)
+
+    console.print(f"[green]OK[/green] {len(ads)} anuncios cargados desde CSV.\n")
+    analysis = analyze(ads, query=query, country=country)
+    _render_analysis(analysis)
+    _render_top_ads(ads)
 
 
 def _render_analysis(a: MarketAnalysis):
