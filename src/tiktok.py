@@ -160,16 +160,51 @@ def _parse_ad(raw: dict, country: str) -> TikTokAd:
     video_info = raw.get("video_info") or {}
     return TikTokAd(
         ad_id=str(raw.get("id", "") or raw.get("material_id", "")),
-        brand_name=raw.get("brand_name") or raw.get("brand", "") or "",
+        brand_name=(
+            raw.get("brand_name")
+            or raw.get("brand")
+            or raw.get("advertiser_name")
+            or raw.get("account_name")
+            or ""
+        ),
         country_code=country,
         like=int(raw.get("like", 0) or 0),
         ctr=float(raw.get("ctr", 0) or 0),
         video_duration=int(video_info.get("duration", 0) or 0),
-        industry=raw.get("industry_key") or raw.get("industry"),
-        objective=raw.get("objective_key") or raw.get("objective"),
-        title=raw.get("objective_desc") or raw.get("title") or raw.get("ad_title"),
-        cover_url=video_info.get("cover") or raw.get("cover"),
+        industry=(
+            raw.get("industry_label_name")
+            or raw.get("industry_name")
+            or raw.get("industry")
+            or _clean_label(raw.get("industry_key"))
+        ),
+        objective=(
+            raw.get("objective_name")
+            or raw.get("objective_key")
+            or raw.get("objective")
+        ),
+        title=(
+            raw.get("ad_title")
+            or raw.get("highlight_text")
+            or raw.get("title")
+            or raw.get("objective_desc")
+            or raw.get("description")
+            or ""
+        ),
+        cover_url=(
+            video_info.get("cover")
+            or raw.get("cover_url")
+            or raw.get("cover")
+        ),
     )
+
+
+def _clean_label(label) -> Optional[str]:
+    if not label or not isinstance(label, str):
+        return None
+    if label.startswith("label_"):
+        code = label.replace("label_", "").rstrip("0")
+        return f"cat-{code}" if code else None
+    return label
 
 
 def _parse_product(raw: dict, country: str) -> TikTokProduct:

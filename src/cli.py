@@ -123,64 +123,69 @@ def analyze_csv(csv_path: str, query: str, country: str):
 @click.option("--period", default=30, type=click.Choice(["7", "30", "120"]), help="Dias.")
 @click.option("--pages", default=3, type=int, help="Paginas a traer.")
 def discover(country: str, period: str, pages: int):
-    """Descubre top anuncios y productos trending en TikTok (sin token)."""
+    """Descubre top anuncios trending en TikTok (sin token)."""
     tt = TikTokCreativeCenter()
     period_int = int(period)
-
-    with console.status(f"Cargando top productos en {country} (ultimos {period}d)..."):
-        try:
-            products = list(tt.popular_products(country_code=country, period=period_int, pages=pages))
-        except TikTokError as e:
-            console.print(f"[red]TikTok error (productos):[/red] {e}")
-            products = []
 
     with console.status(f"Cargando top anuncios en {country} (ultimos {period}d)..."):
         try:
             ads = list(tt.top_ads(country_code=country, period=period_int, pages=pages))
         except TikTokError as e:
-            console.print(f"[red]TikTok error (anuncios):[/red] {e}")
-            ads = []
+            console.print(f"[red]Error:[/red] {e}")
+            sys.exit(1)
 
-    if not products and not ads:
+    if not ads:
         console.print(
-            "[yellow]Sin datos.[/yellow] TikTok puede estar bloqueando la peticion. "
-            "Prueba otro pais o cambia el periodo."
+            "[yellow]Sin datos.[/yellow] TikTok pudo mostrar challenge. "
+            "Prueba otro pais o periodo."
         )
         return
 
-    if products:
-        t = Table(title=f"Top productos trending en {country} ({period}d)", header_style="bold")
-        t.add_column("#", justify="right")
-        t.add_column("Producto", style="cyan")
-        t.add_column("Categoria")
-        t.add_column("CVR%", justify="right")
-        t.add_column("# anuncios", justify="right")
-        for i, p in enumerate(products[:50], 1):
-            t.add_row(
-                str(p.rank or i),
-                (p.name or "")[:60],
-                (p.category or "")[:25],
-                f"{p.cvr:.2f}" if p.cvr else "-",
-                str(p.ad_count) if p.ad_count else "-",
-            )
-        console.print(t)
+    console.print(f"[green]OK[/green] {len(ads)} anuncios trending en {country}.\n")
 
-    if ads:
-        t = Table(title=f"Top anuncios en {country} ({period}d)", header_style="bold")
-        t.add_column("Marca", style="cyan")
-        t.add_column("Industria")
-        t.add_column("Likes", justify="right")
-        t.add_column("CTR%", justify="right")
-        t.add_column("Duracion s", justify="right")
-        for ad in ads[:30]:
-            t.add_row(
-                ad.brand_name[:30],
-                (ad.industry or "")[:25],
-                _humanize(ad.like),
-                f"{ad.ctr:.2f}" if ad.ctr else "-",
-                str(ad.video_duration) if ad.video_duration else "-",
-            )
-        console.print(t)
+    t = Table(
+        title=f"Top anuncios en {country} (ultimos {period}d)",
+        header_style="bold",
+        show_lines=False,
+    )
+    t.add_column("#", justify="right", style="dim")
+    t.add_column("Marca / Anunciante", style="cyan", max_width=25)
+    t.add_column("Titulo del anuncio", max_width=50)
+    t.add_column("Industria", max_width=20)
+    t.add_column("Likes", justify="right")
+    t.add_column("CTR%", justify="right")
+    t.add_column("Dur", justify="right")
+    for i, ad in enumerate(ads[:40], 1):
+        t.add_row(
+            str(i),
+            (ad.brand_name or "-")[:25],
+            (ad.title or "-")[:50],
+            (ad.industry or "-")[:20],
+            _humanize(ad.like),
+            f"{ad.ctr:.2f}" if ad.ctr else "-",
+            f"{ad.video_duration}s" if ad.video_duration else "-",
+        )
+    console.print(t)
+
+    from collections import Counter
+    brand_counts = Counter(a.brand_name for a in ads if a.brand_name).most_common(10)
+    industry_counts = Counter(a.industry for a in ads if a.industry).most_common(10)
+
+    if brand_counts:
+        t2 = Table(title="Anunciantes con mas anuncios trending", header_style="bold")
+        t2.add_column("Marca", style="cyan")
+        t2.add_column("# anuncios", justify="right")
+        for brand, n in brand_counts:
+            t2.add_row(brand, str(n))
+        console.print(t2)
+
+    if industry_counts:
+        t3 = Table(title="Industrias dominantes", header_style="bold")
+        t3.add_column("Industria", style="cyan")
+        t3.add_column("# anuncios", justify="right")
+        for ind, n in industry_counts:
+            t3.add_row(ind, str(n))
+        console.print(t3)
 
 
 @cli.command()
@@ -189,7 +194,7 @@ def discover(country: str, period: str, pages: int):
 @click.option("--period", default=30, type=click.Choice(["7", "30", "120"]))
 @click.option("--pages", default=4, type=int, help="Paginas por pais.")
 def arbitrage(source: str, target: str, period: str, pages: int):
-    """Productos hot en pais FUENTE con poca competencia en pais OBJETIVO.
+    """Anunciantes/productos hot en pais FUENTE con poca presencia en pais OBJETIVO.
 
     Ejemplo:
       python -m src.cli arbitrage -s US -t CO
@@ -197,35 +202,102 @@ def arbitrage(source: str, target: str, period: str, pages: int):
     tt = TikTokCreativeCenter()
     period_int = int(period)
 
-    with console.status(f"Cargando productos en {source}..."):
+    with console.status(f"Cargando anuncios en {source}..."):
         try:
-            source_products = list(
-                tt.popular_products(country_code=source, period=period_int, pages=pages)
+            source_ads = list(
+                tt.top_ads(country_code=source, period=period_int, pages=pages)
             )
         except TikTokError as e:
             console.print(f"[red]Error cargando {source}:[/red] {e}")
             sys.exit(1)
 
-    with console.status(f"Cargando productos en {target}..."):
+    with console.status(f"Cargando anuncios en {target}..."):
         try:
-            target_products = list(
-                tt.popular_products(country_code=target, period=period_int, pages=pages)
+            target_ads = list(
+                tt.top_ads(country_code=target, period=period_int, pages=pages)
             )
         except TikTokError as e:
             console.print(f"[yellow]No se pudo cargar {target}:[/yellow] {e}")
-            target_products = []
+            target_ads = []
 
     console.print(
-        f"[green]OK[/green] {len(source_products)} productos en {source}, "
-        f"{len(target_products)} en {target}.\n"
+        f"[green]OK[/green] {len(source_ads)} anuncios en {source}, "
+        f"{len(target_ads)} en {target}.\n"
     )
 
-    opportunities = find_opportunities(source_products, target_products)
+    target_brands = {(a.brand_name or "").strip().lower() for a in target_ads if a.brand_name}
+    target_titles = [(a.title or "").strip().lower() for a in target_ads if a.title]
+
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for ad in source_ads:
+        key = (ad.brand_name or "").strip().lower()
+        if not key:
+            key = ((ad.title or "")[:30]).strip().lower()
+        if not key:
+            continue
+        groups[key].append(ad)
+
+    opportunities = []
+    for brand_key, ads_group in groups.items():
+        if brand_key in target_brands:
+            continue
+        sample = ads_group[0]
+        display_title = sample.title or sample.brand_name or "(sin titulo)"
+        if any(brand_key in t for t in target_titles if t):
+            continue
+
+        total_likes = sum(a.like for a in ads_group)
+        avg_ctr = sum(a.ctr for a in ads_group) / len(ads_group) if ads_group else 0
+        num_ads = len(ads_group)
+
+        score = 0
+        if num_ads >= 5:
+            score += 30
+        elif num_ads >= 3:
+            score += 20
+        elif num_ads >= 2:
+            score += 10
+        else:
+            score += 5
+
+        if total_likes >= 10000:
+            score += 35
+        elif total_likes >= 1000:
+            score += 25
+        elif total_likes >= 100:
+            score += 15
+        elif total_likes >= 10:
+            score += 5
+
+        if avg_ctr >= 1.0:
+            score += 20
+        elif avg_ctr >= 0.5:
+            score += 10
+        elif avg_ctr >= 0.2:
+            score += 5
+
+        industries = {a.industry for a in ads_group if a.industry}
+        industry = ", ".join(list(industries)[:2]) if industries else "-"
+
+        opportunities.append({
+            "brand": sample.brand_name or "(sin marca)",
+            "title": display_title[:55],
+            "industry": industry,
+            "num_ads": num_ads,
+            "likes": total_likes,
+            "ctr": avg_ctr,
+            "score": min(100, score),
+        })
+
+    opportunities.sort(key=lambda x: x["score"], reverse=True)
 
     if not opportunities:
         console.print(
             "[yellow]No se encontraron oportunidades claras.[/yellow] "
-            "Los productos top del fuente ya aparecen en el objetivo."
+            "Los anunciantes top del fuente ya aparecen en el objetivo, o "
+            "el target no devolvio datos suficientes."
         )
         return
 
@@ -233,33 +305,35 @@ def arbitrage(source: str, target: str, period: str, pages: int):
         title=f"Oportunidades de arbitraje: {source} -> {target}",
         header_style="bold",
     )
-    t.add_column("#", justify="right")
-    t.add_column("Producto", style="cyan", max_width=40)
-    t.add_column("Rank en " + source, justify="right")
-    t.add_column("CVR%", justify="right")
+    t.add_column("#", justify="right", style="dim")
+    t.add_column("Marca / Titulo", style="cyan", max_width=40)
+    t.add_column("Industria", max_width=20)
     t.add_column("Ads", justify="right")
+    t.add_column("Likes", justify="right")
+    t.add_column("CTR%", justify="right")
     t.add_column("Score", justify="right")
-    t.add_column("Por que")
     for i, op in enumerate(opportunities[:30], 1):
-        color = "green" if op.gap_score >= 70 else "yellow" if op.gap_score >= 40 else "white"
+        color = "green" if op["score"] >= 70 else "yellow" if op["score"] >= 40 else "white"
+        display = op["brand"] if op["brand"] != "(sin marca)" else op["title"]
         t.add_row(
             str(i),
-            op.product_name[:40],
-            str(op.source_rank),
-            f"{op.source_cvr:.1f}" if op.source_cvr else "-",
-            str(op.source_ad_count) if op.source_ad_count else "-",
-            f"[{color}]{op.gap_score}[/{color}]",
-            op.reason,
+            display[:40],
+            op["industry"][:20],
+            str(op["num_ads"]),
+            _humanize(op["likes"]),
+            f"{op['ctr']:.2f}" if op["ctr"] else "-",
+            f"[{color}]{op['score']}[/{color}]",
         )
     console.print(t)
 
     console.print(
         "\n[bold]Interpretacion:[/bold]\n"
         "  - Score >=70 [green]verde[/green]: fuerte candidato, priorizar\n"
-        "  - Score 40-69 [yellow]amarillo[/yellow]: viable, testear con creative propio\n"
-        "  - Score <40: debil, probablemente nicho muy especifico o producto de moda pasajera\n\n"
-        "[dim]Nota: 'sin presencia detectable' = no en top trending del objetivo. "
-        "Aun puede haber competencia media. Cruza con Meta Ad Library cuando tengas token.[/dim]"
+        "  - Score 40-69 [yellow]amarillo[/yellow]: viable con creative propio\n"
+        "  - Score <40: debil (moda pasajera o volumen muy bajo)\n\n"
+        "[dim]Comparacion basada en marcas/titulos de anuncios trending en TikTok.\n"
+        "Falsos positivos posibles si el anunciante usa otro nombre en {target}.\n"
+        "Cruza con Meta Ad Library cuando tengas token aprobado.[/dim]".format(target=target)
     )
 
 
