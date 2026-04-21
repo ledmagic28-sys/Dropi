@@ -2,26 +2,7 @@ import time
 from dataclasses import dataclass
 from typing import Iterator, Optional
 
-import requests
-
-CREATIVE_CENTER_BASE = "https://ads.tiktok.com/creative_radar_api/v1"
-REFERER = "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pad/en"
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Referer": REFERER,
-    "Origin": "https://ads.tiktok.com",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "Timezone-Name": "America/Bogota",
-    "Web-Id": "7000000000000000000",
-}
+CREATIVE_CENTER_BASE = "https://ads.tiktok.com/business/creativecenter/inspiration"
 
 
 class TikTokError(Exception):
@@ -56,97 +37,123 @@ class TikTokProduct:
 
 
 class TikTokCreativeCenter:
-    """Cliente publico del Creative Center de TikTok (sin auth)."""
+    """Scraper del Creative Center via navegador headless (Playwright).
 
-    def __init__(self, timeout: int = 30, rate_limit: float = 1.0):
-        self.timeout = timeout
-        self.rate_limit = rate_limit
-        self.session = requests.Session()
-        self.session.headers.update(HEADERS)
+    Requiere: pip install playwright && playwright install chromium
+    """
 
-    def _get(self, path: str, params: dict) -> dict:
-        url = f"{CREATIVE_CENTER_BASE}{path}"
-        resp = self.session.get(url, params=params, timeout=self.timeout)
-        if not resp.ok:
-            raise TikTokError(f"HTTP {resp.status_code}: {resp.text[:300]}")
-        try:
-            data = resp.json()
-        except ValueError:
-            raise TikTokError(f"Respuesta no-JSON: {resp.text[:300]}")
-        code = data.get("code")
-        if code not in (0, None):
-            raise TikTokError(f"TikTok API code={code}: {data.get('msg', data)}")
-        return data
+    def __init__(self, headless: bool = True, timeout_ms: int = 30000):
+        self.headless = headless
+        self.timeout_ms = timeout_ms
 
     def top_ads(
         self,
         country_code: str = "CO",
         period: int = 30,
-        industry: Optional[str] = None,
         pages: int = 3,
-        limit: int = 20,
+        **_,
     ) -> Iterator[TikTokAd]:
-        for page in range(1, pages + 1):
-            params = {
-                "period": period,
-                "page": page,
-                "limit": limit,
-                "order_by": "for_you",
-                "country_code": country_code,
-            }
-            if industry:
-                params["industry"] = industry
-            try:
-                data = self._get("/top_ads/v2/list", params)
-            except TikTokError:
-                if page == 1:
-                    raise
-                return
-            materials = data.get("data", {}).get("materials", [])
-            if not materials:
-                return
-            for raw in materials:
-                yield _parse_ad(raw, country_code)
-            time.sleep(self.rate_limit)
+        url = (
+            f"{CREATIVE_CENTER_BASE}/topads/pad/en"
+            f"?period={period}&region={country_code.upper()}"
+        )
+        for raw in self._collect(url, filter_substr="top_ads", pages=pages):
+            yield _parse_ad(raw, country_code)
 
     def popular_products(
         self,
         country_code: str = "CO",
         period: int = 30,
         pages: int = 3,
-        limit: int = 20,
+        **_,
     ) -> Iterator[TikTokProduct]:
-        paths = ["/popular_products/list", "/popular_product/list"]
-        for page in range(1, pages + 1):
-            params = {
-                "period": period,
-                "page": page,
-                "limit": limit,
-                "country_code": country_code,
-                "sort_by": "vv_growth_rate",
-            }
-            data = None
-            last_err: Optional[Exception] = None
-            for p in paths:
-                try:
-                    data = self._get(p, params)
-                    break
-                except TikTokError as e:
-                    last_err = e
-            if data is None:
-                if page == 1 and last_err:
-                    raise last_err
-                return
-            materials = (
-                data.get("data", {}).get("products")
-                or data.get("data", {}).get("materials")
-                or []
+        url = (
+            f"{CREATIVE_CENTER_BASE}/popular/product/pc/en"
+            f"?period={period}&region={country_code.upper()}"
+        )
+        for raw in self._collect(url, filter_substr="popular_product", pages=pages):
+            yield _parse_product(raw, country_code)
+
+    def _collect(self, url: str, filter_substr: str, pages: int) -> list[dict]:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            raise TikTokError(
+                "Playwright no instalado. Corre en Windows:\n"
+                "  pip install playwright\n"
+                "  playwright install chromium"
             )
-            if not materials:
-                return
-            for raw in materials:
-                yield _parse_product(raw, country_code)
-            time.sleep(self.rate_limit)
+
+        materials: list[dict] = []
+        seen: set[str] = set()
+
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(headless=self.headless)
+            except Exception as e:
+                raise TikTokError(
+                    f"No se pudo lanzar Chromium: {e}. "
+                    "Corre 'playwright install chromium' primero."
+                )
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/121.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1400, "height": 900},
+                locale="en-US",
+            )
+            page = context.new_page()
+
+            def on_response(response):
+                if filter_substr not in response.url:
+                    return
+                try:
+                    data = response.json()
+                except Exception:
+                    return
+                if data.get("code", 0) != 0:
+                    return
+                d = data.get("data", {}) or {}
+                for key in ("materials", "products", "list", "creatives"):
+                    items = d.get(key) or []
+                    for item in items:
+                        item_id = str(
+                            item.get("id")
+                            or item.get("product_id")
+                            or item.get("material_id")
+                            or item.get("creative_id")
+                            or ""
+                        )
+                        if item_id and item_id not in seen:
+                            seen.add(item_id)
+                            materials.append(item)
+
+            page.on("response", on_response)
+
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_ms)
+            except Exception as e:
+                browser.close()
+                raise TikTokError(f"Error cargando {url}: {e}")
+
+            page.wait_for_timeout(5000)
+            for _ in range(max(0, pages - 1)):
+                try:
+                    page.mouse.wheel(0, 2500)
+                    page.wait_for_timeout(2500)
+                except Exception:
+                    break
+
+            browser.close()
+
+        if not materials:
+            raise TikTokError(
+                "No se capturaron datos. TikTok pudo mostrar challenge, cambiar estructura, "
+                "o no haber resultados para ese pais/periodo. Prueba otro pais."
+            )
+        return materials
 
 
 def _parse_ad(raw: dict, country: str) -> TikTokAd:
