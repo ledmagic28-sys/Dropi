@@ -1,6 +1,7 @@
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 import click
 from rich.console import Console
@@ -13,7 +14,7 @@ from .client import MetaAdLibraryClient, MetaAdLibraryError
 from .csv_loader import CsvLoaderError, load_ads_from_csv
 from .models import Ad, MarketAnalysis
 from .scraper import MetaAdLibraryScraper, ScraperError
-from .tiktok import TikTokCreativeCenter, TikTokError
+from .tiktok import INDUSTRIES_HINT, TikTokCreativeCenter, TikTokError
 
 console = Console()
 
@@ -121,15 +122,34 @@ def analyze_csv(csv_path: str, query: str, country: str):
 @cli.command()
 @click.option("--country", "-c", default="CO", help="Pais (CO, MX, US, BR, ES...).")
 @click.option("--period", default=30, type=click.Choice(["7", "30", "120"]), help="Dias.")
-@click.option("--pages", default=3, type=int, help="Paginas a traer.")
-def discover(country: str, period: str, pages: int):
+@click.option("--pages", default=6, type=int, help="Paginas a traer (mas = mas resultados).")
+@click.option(
+    "--industry",
+    "-i",
+    default=None,
+    help=(
+        "Filtrar por industria. Usa alias (apparel, beauty, food, home, auto, sports, "
+        "electronics, personal_care, finance, travel, education, entertainment) "
+        "o codigo completo (ej: 22108000000)."
+    ),
+)
+def discover(country: str, period: str, pages: int, industry: Optional[str]):
     """Descubre top anuncios trending en TikTok (sin token)."""
     tt = TikTokCreativeCenter()
     period_int = int(period)
+    industry_code = _resolve_industry(industry) if industry else None
 
-    with console.status(f"Cargando top anuncios en {country} (ultimos {period}d)..."):
+    status_msg = f"Cargando top anuncios en {country} (ultimos {period}d"
+    if industry_code:
+        status_msg += f", industria={industry})"
+    else:
+        status_msg += ")"
+
+    with console.status(status_msg + "..."):
         try:
-            ads = list(tt.top_ads(country_code=country, period=period_int, pages=pages))
+            ads = list(tt.top_ads(
+                country_code=country, period=period_int, pages=pages, industry=industry_code
+            ))
         except TikTokError as e:
             console.print(f"[red]Error:[/red] {e}")
             sys.exit(1)
@@ -192,20 +212,29 @@ def discover(country: str, period: str, pages: int):
 @click.option("--source", "-s", required=True, help="Pais fuente (donde ya pega).")
 @click.option("--target", "-t", required=True, help="Pais objetivo (donde llevar el producto).")
 @click.option("--period", default=30, type=click.Choice(["7", "30", "120"]))
-@click.option("--pages", default=4, type=int, help="Paginas por pais.")
-def arbitrage(source: str, target: str, period: str, pages: int):
+@click.option("--pages", default=6, type=int, help="Paginas por pais.")
+@click.option(
+    "--industry",
+    "-i",
+    default=None,
+    help="Filtrar por industria (apparel, beauty, food, home, auto, sports...).",
+)
+def arbitrage(source: str, target: str, period: str, pages: int, industry: Optional[str]):
     """Anunciantes/productos hot en pais FUENTE con poca presencia en pais OBJETIVO.
 
     Ejemplo:
-      python -m src.cli arbitrage -s US -t CO
+      python -m src.cli arbitrage -s US -t CO -i beauty
     """
     tt = TikTokCreativeCenter()
     period_int = int(period)
+    industry_code = _resolve_industry(industry) if industry else None
 
     with console.status(f"Cargando anuncios en {source}..."):
         try:
             source_ads = list(
-                tt.top_ads(country_code=source, period=period_int, pages=pages)
+                tt.top_ads(
+                    country_code=source, period=period_int, pages=pages, industry=industry_code
+                )
             )
         except TikTokError as e:
             console.print(f"[red]Error cargando {source}:[/red] {e}")
@@ -214,7 +243,9 @@ def arbitrage(source: str, target: str, period: str, pages: int):
     with console.status(f"Cargando anuncios en {target}..."):
         try:
             target_ads = list(
-                tt.top_ads(country_code=target, period=period_int, pages=pages)
+                tt.top_ads(
+                    country_code=target, period=period_int, pages=pages, industry=industry_code
+                )
             )
         except TikTokError as e:
             console.print(f"[yellow]No se pudo cargar {target}:[/yellow] {e}")
@@ -335,6 +366,13 @@ def arbitrage(source: str, target: str, period: str, pages: int):
         "Falsos positivos posibles si el anunciante usa otro nombre en {target}.\n"
         "Cruza con Meta Ad Library cuando tengas token aprobado.[/dim]".format(target=target)
     )
+
+
+def _resolve_industry(value: str) -> str:
+    v = value.strip().lower()
+    if v in INDUSTRIES_HINT:
+        return INDUSTRIES_HINT[v]
+    return value.strip()
 
 
 def _humanize(n: int) -> str:

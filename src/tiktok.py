@@ -51,12 +51,15 @@ class TikTokCreativeCenter:
         country_code: str = "CO",
         period: int = 30,
         pages: int = 3,
+        industry: Optional[str] = None,
         **_,
     ) -> Iterator[TikTokAd]:
         url = (
             f"{CREATIVE_CENTER_BASE}/topads/pad/en"
             f"?period={period}&region={country_code.upper()}"
         )
+        if industry:
+            url += f"&industry={industry}"
         for raw in self._collect(url, filter_substr="top_ads", pages=pages):
             yield _parse_ad(raw, country_code)
 
@@ -86,6 +89,7 @@ class TikTokCreativeCenter:
 
         materials: list[dict] = []
         seen: set[str] = set()
+        industry_map: dict[str, str] = {}
 
         with sync_playwright() as p:
             try:
@@ -107,7 +111,19 @@ class TikTokCreativeCenter:
             page = context.new_page()
 
             def on_response(response):
-                if filter_substr not in response.url:
+                url_str = response.url
+                if "industry" in url_str.lower() and "list" in url_str.lower():
+                    try:
+                        data = response.json()
+                        for item in _iter_industry_items(data):
+                            key = str(item.get("value") or item.get("key") or item.get("id") or "")
+                            label = item.get("label") or item.get("name") or ""
+                            if key and label:
+                                industry_map[key] = label
+                    except Exception:
+                        pass
+                    return
+                if filter_substr not in url_str:
                     return
                 try:
                     data = response.json()
@@ -139,14 +155,33 @@ class TikTokCreativeCenter:
                 raise TikTokError(f"Error cargando {url}: {e}")
 
             page.wait_for_timeout(5000)
-            for _ in range(max(0, pages - 1)):
+
+            for i in range(max(0, pages - 1)):
                 try:
-                    page.mouse.wheel(0, 2500)
+                    page.evaluate(
+                        "() => window.scrollTo(0, document.body.scrollHeight)"
+                    )
                     page.wait_for_timeout(2500)
+                    try:
+                        btn = page.query_selector(
+                            "div[class*='ViewMore'], button:has-text('View more'), "
+                            "button:has-text('Ver más'), button:has-text('Load more')"
+                        )
+                        if btn:
+                            btn.click(timeout=2000)
+                            page.wait_for_timeout(2500)
+                    except Exception:
+                        pass
                 except Exception:
                     break
 
             browser.close()
+
+        if industry_map:
+            for m in materials:
+                key = str(m.get("industry_key") or "")
+                if key in industry_map and not m.get("industry_label_name"):
+                    m["industry_label_name"] = industry_map[key]
 
         if not materials:
             raise TikTokError(
@@ -226,3 +261,37 @@ def _try_float(value) -> Optional[float]:
         return float(value) if value is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _iter_industry_items(data):
+    if not isinstance(data, dict):
+        return
+    stack = [data]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            if ("value" in node or "key" in node) and ("label" in node or "name" in node):
+                yield node
+            for v in node.values():
+                if isinstance(v, (dict, list)):
+                    stack.append(v)
+        elif isinstance(node, list):
+            for v in node:
+                if isinstance(v, (dict, list)):
+                    stack.append(v)
+
+
+INDUSTRIES_HINT = {
+    "apparel": "17000000000",
+    "beauty": "20100000000",
+    "personal_care": "20105000000",
+    "food": "22108000000",
+    "electronics": "21000000000",
+    "home": "22000000000",
+    "auto": "11000000000",
+    "sports": "24000000000",
+    "education": "23110000000",
+    "finance": "23103000000",
+    "travel": "23102000000",
+    "entertainment": "23100000000",
+}
