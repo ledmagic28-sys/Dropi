@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dropi Market Radar — Triangulación de Mercado</title>
+  <style>
+    :root {
+      --dropi: #6C3CE1;
+      --dropi-light: #8B5CF6;
+      --green: #10B981;
+      --yellow: #F59E0B;
+      --red: #EF4444;
+      --card-bg: #1E1B2E;
+      --page-bg: #13101F;
+      --text: #F0EBF8;
+      --muted: #7E6FA0;
+      --border: #2E2547;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+
+    /* ───────── HEADER ───────── */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--dropi), var(--dropi-light));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .header h1 {
+      font-size: clamp(22px, 5vw, 38px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 40%, var(--dropi-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+    .header p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ───────── LAYOUT ───────── */
+    .flow {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ───────── CARDS ───────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 26px;
+    }
+
+    /* ───────── DROPI PRODUCT ───────── */
+    .product-card {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      position: relative;
+    }
+    .product-emoji {
+      font-size: 48px;
+      flex-shrink: 0;
+    }
+    .product-info h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .product-info .sku {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .product-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .tag-price { background: #1a2e22; color: var(--green); border: 1px solid #1f4032; }
+    .tag-cat   { background: #1e1a2e; color: var(--dropi-light); border: 1px solid #2e2547; }
+    .dropi-label {
+      position: absolute;
+      top: -11px;
+      left: 20px;
+      background: linear-gradient(90deg, var(--dropi), var(--dropi-light));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 2px 10px;
+      border-radius: 10px;
+    }
+
+    /* ───────── ARROW DOWN ───────── */
+    .arrow-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 4px 0;
+    }
+    .arrow-line {
+      width: 2px;
+      height: 36px;
+      background: linear-gradient(to bottom, var(--dropi), transparent);
+      animation: pulse-line 2s ease-in-out infinite;
+    }
+    .arrow-tip {
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid var(--dropi-light);
+      opacity: 0.7;
+    }
+    @keyframes pulse-line {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* ───────── STEP LABEL ───────── */
+    .step-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 18px 0 10px;
+      text-align: center;
+    }
+    .step-label span {
+      background: var(--border);
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* ───────── SOURCES ROW ───────── */
+    .sources-row {
+      width: 100%;
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      position: relative;
+    }
+
+    .source-card {
+      border-radius: 16px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+    .source-card:hover { transform: translateY(-3px); }
+
+    .source-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .source-ml::before   { background: linear-gradient(90deg, #FFE000, #F5A800); }
+    .source-fbads::before{ background: linear-gradient(90deg, #1877F2, #23C0EC); }
+    .source-fbmkt::before{ background: linear-gradient(90deg, #1877F2, #42B883); }
+
+    .source-card .source-logo {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .source-card .source-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      margin-bottom: 10px;
+    }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .source-ml   .metric-value { color: #F5A800; }
+    .source-fbads .metric-value { color: #23C0EC; }
+    .source-fbmkt .metric-value { color: #42B883; }
+
+    .mini-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .mini-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .mini-row .mini-key { color: var(--muted); }
+    .mini-row .mini-val { font-weight: 600; }
+
+    /* ───────── LOADING ANIMATION ───────── */
+    .loading-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+    .source-ml   .loading-dot { background: #F5A800; }
+    .source-fbads .loading-dot { background: #23C0EC; }
+    .source-fbmkt .loading-dot { background: #42B883; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40%           { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .querying-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ───────── CONNECTOR LINES ───────── */
+    .connector-wrap {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+      height: 56px;
+      margin: 0;
+    }
+    .connector-svg {
+      width: 100%;
+      height: 56px;
+      overflow: visible;
+    }
+
+    /* ───────── ANALYSIS ENGINE ───────── */
+    .engine-card {
+      width: 100%;
+      max-width: 680px;
+      background: linear-gradient(135deg, #1A1430 0%, #1E1B2E 100%);
+      border: 1px solid var(--dropi);
+      border-radius: 20px;
+      padding: 28px 32px;
+      position: relative;
+    }
+    .engine-title {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dropi-light);
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .engine-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .gauge-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .gauge-box { }
+    .gauge-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .gauge-bar-wrap {
+      background: #0d0a1a;
+      border-radius: 20px;
+      height: 12px;
+      overflow: hidden;
+    }
+    .gauge-bar {
+      height: 100%;
+      border-radius: 20px;
+      position: relative;
+    }
+    .gauge-bar.animated {
+      animation: fill-bar 1.4s ease-out forwards;
+      transform-origin: left;
+    }
+    @keyframes fill-bar {
+      from { width: 0 !important; }
+    }
+    .gauge-value {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .gauge-sublabel {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* gauge colors */
+    .gauge-demand .gauge-bar  { background: linear-gradient(90deg, var(--green), #34D399); }
+    .gauge-demand .gauge-value { color: var(--green); }
+    .gauge-sat   .gauge-bar  { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+    .gauge-sat   .gauge-value { color: var(--yellow); }
+
+    .totals-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .total-box {
+      flex: 1;
+      background: #0d0a1a;
+      border-radius: 12px;
+      padding: 14px 18px;
+      text-align: center;
+    }
+    .total-box .t-val {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .total-box .t-lbl {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ───────── RECOMMENDATION ───────── */
+    .recommendation {
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .rec-yellow { background: #1f1a08; border: 1px solid #92400e; }
+    .rec-green  { background: #071f14; border: 1px solid #065f3e; }
+    .rec-red    { background: #1f0a0a; border: 1px solid #7f1d1d; }
+
+    .rec-icon { font-size: 30px; flex-shrink: 0; }
+    .rec-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .rec-title.yellow { color: var(--yellow); }
+    .rec-title.green  { color: var(--green);  }
+    .rec-title.red    { color: var(--red);    }
+    .rec-body {
+      font-size: 13px;
+      color: #b8a8d0;
+      line-height: 1.6;
+    }
+
+    /* ───────── METHODOLOGY ───────── */
+    .method-section {
+      width: 100%;
+      max-width: 980px;
+      margin-top: 52px;
+    }
+    .method-title {
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .method-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .method-num {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--dropi);
+      opacity: 0.4;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .method-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .method-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ───────── DATA FLOW ANIMATION ───────── */
+    .data-particle {
+      animation: float-down 2s ease-in-out infinite;
+    }
+    @keyframes float-down {
+      0%   { transform: translateY(0);   opacity: 0; }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translateY(50px); opacity: 0; }
+    }
+
+    /* ───────── RESPONSIVE ───────── */
+    @media (max-width: 640px) {
+      .sources-row { grid-template-columns: 1fr; }
+      .gauge-row   { grid-template-columns: 1fr; }
+      .totals-row  { flex-direction: column; }
+    }
+
+    /* ───────── PULSE RING ───────── */
+    .pulse-ring {
+      position: absolute;
+      top: -2px; right: -2px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .pulse-ring::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      animation: ring-pulse 1.5s ease-out infinite;
+    }
+    @keyframes ring-pulse {
+      from { transform: scale(1); opacity: 1; }
+      to   { transform: scale(2.5); opacity: 0; }
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="badge">Dropi Market Radar</div>
+  <h1>¿Cuántas personas están vendiendo<br>este producto en tu mercado?</h1>
+  <p>La automatización consulta 3 fuentes al mismo tiempo y te da una respuesta en segundos.</p>
+</header>
+
+<!-- ═══════════════════════════════════════════════════
+     FLUJO PRINCIPAL
+════════════════════════════════════════════════════════ -->
+<div class="flow">
+
+  <!-- PASO 1: Producto en Dropi -->
+  <div class="step-label"><span>Paso 1 — Seleccionas un producto en Dropi</span></div>
+
+  <div class="card product-card">
+    <div class="dropi-label">DROPI</div>
+    <div class="product-emoji">💆</div>
+    <div class="product-info">
+      <h2>Masajeador de Cuello Eléctrico</h2>
+      <div class="sku">SKU #DR-8821 · En stock: 340 unidades</div>
+      <div class="product-tags">
+        <span class="tag tag-price">💰 $85.000 COP costo</span>
+        <span class="tag tag-cat">🏷️ Salud &amp; Bienestar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLECHA -->
+  <div class="arrow-down">
+    <div class="arrow-line"></div>
+    <div class="arrow-tip"></div>
+  </div>
+
+  <!-- PASO 2: Consulta simultánea -->
+  <div class="step-label"><span>Paso 2 — La automatización consulta 3 fuentes al mismo tiempo</span></div>
+
+  <div class="sources-row">
+
+    <!-- MERCADO LIBRE -->
+    <div class="source-card source-ml card">
+      <div class="querying-label">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        Consultando…
+      </div>
+      <div class="source-logo">🟡</div>
+      <div class="source-name">Mercado Libre</div>
+      <div class="metric">
+        <div class="metric-value">847</div>
+        <div class="metric-label">vendedores activos</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row">
+          <span class="mini-key">Publicaciones totales</span>
+          <span class="mini-val">2.341</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Precio promedio</span>
+          <span class="mini-val">$142.000 COP</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Ventas último mes</span>
+          <span class="mini-val">~12.800</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Rating promedio</span>
+          <span class="mini-val">⭐ 4.3 / 5</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FACEBOOK AD LIBRARY -->
+    <div class="source-card source-fbads card">
+      <div class="querying-label">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        Consultando…
+      </div>
+      <div class="source-logo">🔵</div>
+      <div class="source-name">Facebook Ad Library</div>
+      <div class="metric">
+        <div class="metric-value">67</div>
+        <div class="metric-label">anunciantes activos</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row">
+          <span class="mini-key">Anuncios totales</span>
+          <span class="mini-val">189</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Anuncio más antiguo</span>
+          <span class="mini-val">94 días</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Nuevos esta semana</span>
+          <span class="mini-val">12 anunciantes</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Plataformas</span>
+          <span class="mini-val">FB + Instagram</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FACEBOOK MARKETPLACE -->
+    <div class="source-card source-fbmkt card">
+      <div class="querying-label">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        Consultando…
+      </div>
+      <div class="source-logo">🟢</div>
+      <div class="source-name">Facebook Marketplace</div>
+      <div class="metric">
+        <div class="metric-value">234</div>
+        <div class="metric-label">publicaciones activas</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row">
+          <span class="mini-key">Precio más bajo</span>
+          <span class="mini-val">$79.000 COP</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Precio más alto</span>
+          <span class="mini-val">$250.000 COP</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Publicadas hoy</span>
+          <span class="mini-val">18 nuevas</span>
+        </div>
+        <div class="mini-row">
+          <span class="mini-key">Ubicación principal</span>
+          <span class="mini-val">Bogotá, Medellín</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONECTORES SVG -->
+  <div class="connector-wrap">
+    <svg class="connector-svg" viewBox="0 0 980 56" preserveAspectRatio="none">
+      <!-- Línea izquierda (Mercado Libre → Centro) -->
+      <path d="M 163 0 L 163 28 L 490 28 L 490 56"
+            stroke="#6C3CE1" stroke-width="1.5" fill="none" stroke-dasharray="4 4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <!-- Línea central (Ads → Centro) -->
+      <path d="M 490 0 L 490 56"
+            stroke="#6C3CE1" stroke-width="1.5" fill="none" stroke-dasharray="4 4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <!-- Línea derecha (Marketplace → Centro) -->
+      <path d="M 817 0 L 817 28 L 490 28"
+            stroke="#6C3CE1" stroke-width="1.5" fill="none" stroke-dasharray="4 4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <!-- Partículas de datos -->
+      <circle class="data-particle" cx="163" cy="8" r="4" fill="#F5A800" opacity="0">
+        <animate attributeName="cy" values="0;28" dur="1.2s" repeatCount="indefinite" begin="0s"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="1.2s" repeatCount="indefinite"/>
+      </circle>
+      <circle class="data-particle" cx="490" cy="8" r="4" fill="#23C0EC" opacity="0">
+        <animate attributeName="cy" values="0;56" dur="1.2s" repeatCount="indefinite" begin="0.4s"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="1.2s" repeatCount="indefinite" begin="0.4s"/>
+      </circle>
+      <circle class="data-particle" cx="817" cy="8" r="4" fill="#42B883" opacity="0">
+        <animate attributeName="cy" values="0;28" dur="1.2s" repeatCount="indefinite" begin="0.8s"/>
+        <animate attributeName="opacity" values="0;1;1;0" dur="1.2s" repeatCount="indefinite" begin="0.8s"/>
+      </circle>
+    </svg>
+  </div>
+
+  <!-- PASO 3: Análisis combinado -->
+  <div class="step-label"><span>Paso 3 — El motor combina todo y te da la respuesta</span></div>
+
+  <div class="engine-card">
+    <div class="engine-title">
+      <span class="live-badge"><span class="live-dot"></span>Análisis en vivo</span>
+      Motor de Triangulación
+    </div>
+
+    <!-- Gauges: Demanda y Saturación -->
+    <div class="gauge-row">
+      <div class="gauge-box gauge-demand">
+        <div class="gauge-label">📈 Demanda del mercado</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar animated" style="width:78%"></div>
+        </div>
+        <div class="gauge-value">ALTA</div>
+        <div class="gauge-sublabel">78 / 100 — mucha gente lo quiere</div>
+      </div>
+      <div class="gauge-box gauge-sat">
+        <div class="gauge-label">🏪 Saturación del mercado</div>
+        <div class="gauge-bar-wrap">
+          <div class="gauge-bar animated" style="width:58%"></div>
+        </div>
+        <div class="gauge-value">MEDIA</div>
+        <div class="gauge-sublabel">58 / 100 — hay competencia pero hay espacio</div>
+      </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="totals-row">
+      <div class="total-box">
+        <div class="t-val">1.148</div>
+        <div class="t-lbl">vendedores totales identificados</div>
+      </div>
+      <div class="total-box">
+        <div class="t-val">189</div>
+        <div class="t-lbl">anuncios pagados activos</div>
+      </div>
+      <div class="total-box">
+        <div class="t-val">94 días</div>
+        <div class="t-lbl">el más veterano lleva vendiendo</div>
+      </div>
+    </div>
+
+    <!-- Recomendación -->
+    <div class="recommendation rec-yellow">
+      <div class="rec-icon">⚡</div>
+      <div>
+        <div class="rec-title yellow">TESTEAR CON DIFERENCIACIÓN</div>
+        <div class="rec-body">
+          El producto tiene demanda real (847 vendedores en Mercado Libre lo confirman)
+          y 67 anunciantes invierten en Facebook. El mercado es competitivo pero no saturado.
+          <strong style="color:#fde68a">Para entrar con éxito necesitas un ángulo diferente</strong>:
+          mejor creative, bundle con accesorios, o enfocarte en un nicho específico (personas mayores, deportistas, oficinistas).
+          CPA estimado: $18.000–$28.000 COP.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       METODOLOGÍA
+  ════════════════════════════════════════════════════════ -->
+  <div class="method-section">
+    <div class="method-title">¿Cómo funciona por dentro?</div>
+    <div class="method-grid">
+
+      <div class="method-card">
+        <div class="method-num">01</div>
+        <h3>Eliges el producto en Dropi</h3>
+        <p>Copias el nombre del producto desde tu catálogo de Dropi y lo pegas en la herramienta.</p>
+      </div>
+
+      <div class="method-card">
+        <div class="method-num">02</div>
+        <h3>Mercado Libre responde</h3>
+        <p>La API oficial de Mercado Libre nos devuelve cuántos vendedores existen, a qué precio venden y cuánto venden al mes.</p>
+      </div>
+
+      <div class="method-card">
+        <div class="method-num">03</div>
+        <h3>Facebook Ads Library responde</h3>
+        <p>Consultamos la biblioteca de anuncios de Meta: cuántas marcas pagan publicidad, qué tan viejos son sus anuncios (si son viejos = rentable).</p>
+      </div>
+
+      <div class="method-card">
+        <div class="method-num">04</div>
+        <h3>Facebook Marketplace responde</h3>
+        <p>Revisamos cuántos vendedores informales están en Marketplace. Esto mide la demanda local sin publicidad pagada.</p>
+      </div>
+
+      <div class="method-card">
+        <div class="method-num">05</div>
+        <h3>El motor triangula</h3>
+        <p>Combinamos los 3 números para calcular un score de saturación (0–100) y un nivel de demanda. Sin opinión, solo datos.</p>
+      </div>
+
+      <div class="method-card">
+        <div class="method-num">06</div>
+        <h3>Recibes la decisión</h3>
+        <p>En vez de datos crudos, te decimos en una oración: EVITAR, TESTEAR, o TESTEAR CON DIFERENCIACIÓN. Sin tecnicismos.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       ESCALA DE DECISIONES
+  ════════════════════════════════════════════════════════ -->
+  <div class="method-section" style="margin-top:40px;">
+    <div class="method-title">Escala de resultados posibles</div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto;">
+
+      <div class="recommendation rec-green" style="align-items:center;">
+        <div class="rec-icon">🟢</div>
+        <div>
+          <div class="rec-title green">TESTEAR — Score 25–49</div>
+          <div class="rec-body">Producto validado, poca competencia, espacio para entrar. El mejor momento para lanzar.</div>
+        </div>
+      </div>
+
+      <div class="recommendation rec-yellow" style="align-items:center;">
+        <div class="rec-icon">🟡</div>
+        <div>
+          <div class="rec-title yellow">TESTEAR CON DIFERENCIACIÓN — Score 50–74</div>
+          <div class="rec-body">Mercado activo pero competido. Funciona si tienes un ángulo diferente al resto.</div>
+        </div>
+      </div>
+
+      <div class="recommendation rec-red" style="align-items:center;">
+        <div class="rec-icon">🔴</div>
+        <div>
+          <div class="rec-title red">EVITAR / PIVOTAR — Score 75–100</div>
+          <div class="rec-body">Saturado. Demasiados competidores, márgenes comprimidos. Busca un producto adyacente.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /flow -->
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════ -->
+<div style="text-align:center;margin-top:60px;color:var(--muted);font-size:13px;">
+  <div style="margin-bottom:8px;">Dropi Market Radar · Automatización de análisis de mercado</div>
+  <div>Ejecuta en terminal: <code style="background:#1e1b2e;padding:2px 8px;border-radius:6px;color:var(--dropi-light)">dropi triangulate "masajeador cuello" --pais CO</code></div>
+</div>
+
+</body>
+</html>
