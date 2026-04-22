@@ -546,6 +546,47 @@ def _export_triangulation(r: TriangulationResult, path: Path):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+@cli.command()
+@click.option("--port", "-p", default=5000, type=int, help="Puerto donde escuchar.")
+@click.option("--host", default="127.0.0.1", help="Host/IP donde escuchar (0.0.0.0 para exponer).")
+@click.option("--demo", is_flag=True, help="Modo demo: datos de ejemplo, sin APIs reales.")
+def serve(port: int, host: str, demo: bool):
+    """Lanza el dashboard web en el navegador.
+
+    Ejemplos:
+      dropi serve --demo              # prueba la UI con datos de ejemplo
+      dropi serve                      # datos reales (requiere .env configurado)
+      dropi serve --host 0.0.0.0 -p 8080  # expone el dashboard en la red
+    """
+    try:
+        from .webapp import create_app
+    except ImportError as exc:
+        console.print(f"[red]Error importando la webapp:[/red] {exc}")
+        console.print("Instala dependencias: [cyan]pip install flask[/cyan]")
+        sys.exit(1)
+
+    app = create_app(demo=demo)
+
+    mode_color = "yellow" if demo else "green"
+    mode_label = "MODO DEMO (datos de ejemplo)" if demo else "MODO LIVE (APIs reales)"
+
+    console.print()
+    console.print(Panel(
+        f"[bold {mode_color}]{mode_label}[/bold {mode_color}]\n\n"
+        f"Dashboard disponible en: [bold cyan]http://{host}:{port}[/bold cyan]\n"
+        f"Presiona Ctrl+C para detener.",
+        title="[bold]Dropi Market Radar[/bold]",
+        border_style="cyan",
+    ))
+    console.print()
+
+    # Silencia el output verboso de Flask
+    import logging
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+
+    app.run(host=host, port=port, debug=False)
+
+
 def _resolve_industry(value: str) -> str:
     v = value.strip().lower()
     if v in INDUSTRIES_HINT:

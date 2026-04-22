@@ -304,14 +304,18 @@ def _combine(
     ads_sat = ads.saturation_score if ads else 0
 
     ml_sat = 0
-    if ml_sellers >= 500:
-        ml_sat = 40
+    if ml_sellers >= 2000:
+        ml_sat = 85
+    elif ml_sellers >= 1000:
+        ml_sat = 70
+    elif ml_sellers >= 500:
+        ml_sat = 55
     elif ml_sellers >= 200:
-        ml_sat = 30
+        ml_sat = 38
     elif ml_sellers >= 80:
-        ml_sat = 20
+        ml_sat = 22
     elif ml_sellers >= 30:
-        ml_sat = 10
+        ml_sat = 12
     elif ml_sellers >= 10:
         ml_sat = 5
 
