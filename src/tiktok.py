@@ -58,10 +58,11 @@ class TikTokCreativeCenter:
             f"{CREATIVE_CENTER_BASE}/topads/pad/en"
             f"?period={period}&region={country_code.upper()}"
         )
-        if industry:
-            url += f"&industry={industry}"
         for raw in self._collect(url, filter_substr="top_ads", pages=pages):
-            yield _parse_ad(raw, country_code)
+            ad = _parse_ad(raw, country_code)
+            if industry and not _ad_matches_industry(ad, industry):
+                continue
+            yield ad
 
     def popular_products(
         self,
@@ -282,16 +283,25 @@ def _iter_industry_items(data):
 
 
 INDUSTRIES_HINT = {
-    "apparel": "17000000000",
-    "beauty": "20100000000",
-    "personal_care": "20105000000",
-    "food": "22108000000",
-    "electronics": "21000000000",
-    "home": "22000000000",
-    "auto": "11000000000",
-    "sports": "24000000000",
-    "education": "23110000000",
-    "finance": "23103000000",
-    "travel": "23102000000",
-    "entertainment": "23100000000",
+    "apparel": ["apparel", "clothing", "fashion", "wear", "17"],
+    "beauty": ["beauty", "cosmetic", "makeup", "20104", "20100"],
+    "personal_care": ["personal care", "hygien", "20105"],
+    "food": ["food", "beverage", "drink", "22108"],
+    "electronics": ["electron", "gadget", "device", "21"],
+    "home": ["home", "household", "kitchen", "furniture", "decor", "22"],
+    "auto": ["auto", "car", "vehicle", "11"],
+    "sports": ["sport", "fitness", "outdoor", "24"],
+    "education": ["educat", "learning", "23110"],
+    "finance": ["financ", "invest", "bank", "23103"],
+    "travel": ["travel", "tourism", "hotel", "23102"],
+    "entertainment": ["entertain", "game", "media", "23100"],
+    "pet": ["pet", "animal", "dog", "cat"],
+    "baby": ["baby", "infant", "kid", "child"],
 }
+
+
+def _ad_matches_industry(ad, filter_value: str) -> bool:
+    fv = filter_value.lower().strip()
+    ad_industry_text = f"{ad.industry or ''} {ad.title or ''} {ad.brand_name or ''}".lower()
+    keywords = INDUSTRIES_HINT.get(fv, [fv])
+    return any(kw in ad_industry_text for kw in keywords)
