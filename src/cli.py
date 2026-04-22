@@ -12,8 +12,10 @@ from .analyzer import analyze
 from .arbitrage import find_opportunities
 from .client import MetaAdLibraryClient, MetaAdLibraryError
 from .csv_loader import CsvLoaderError, load_ads_from_csv
+from .dropi_client import DropiClient, DropiError, DropiProduct
 from .models import Ad, MarketAnalysis
 from .scraper import MetaAdLibraryScraper, ScraperError
+from .shopify_client import ShopifyClient, ShopifyError, ShopifyPublishResult
 from .tiktok import INDUSTRIES_HINT, TikTokCreativeCenter, TikTokError
 
 console = Console()
@@ -366,6 +368,240 @@ def arbitrage(source: str, target: str, period: str, pages: int, industry: Optio
         "Falsos positivos posibles si el anunciante usa otro nombre en {target}.\n"
         "Cruza con Meta Ad Library cuando tengas token aprobado.[/dim]".format(target=target)
     )
+
+
+@cli.command("dropi-products")
+@click.option("--category", "-C", default=None, help="ID o nombre de categoria en Dropi.")
+@click.option("--search", "-s", default=None, help="Texto de busqueda en el catalogo.")
+@click.option("--min-score", default=60, type=int, show_default=True, help="Score minimo (0-100).")
+@click.option("--limit", "-n", default=20, type=int, show_default=True, help="Maximo de productos a mostrar.")
+@click.option("--export", type=click.Path(), default=None, help="Exportar resultados a JSON.")
+def dropi_products(category: str, search: str, min_score: int, limit: int, export: str):
+    """Busca productos ganadores en Dropi y los puntua (0-100)."""
+    try:
+        client = DropiClient()
+    except DropiError as e:
+        console.print(f"[red]Error Dropi:[/red] {e}")
+        sys.exit(1)
+
+    with console.status("Consultando catalogo de Dropi..."):
+        try:
+            products = list(
+                client.get_winning_products(
+                    category_id=category,
+                    search=search,
+                    min_score=min_score,
+                    limit=limit,
+                )
+            )
+        except DropiError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            sys.exit(1)
+
+    if not products:
+        console.print(f"[yellow]Sin resultados con score >= {min_score}.[/yellow]")
+        return
+
+    console.print(f"[green]OK[/green] {len(products)} productos encontrados.\n")
+    _render_dropi_products(products)
+
+    if export:
+        _export_dropi_products(products, Path(export))
+        console.print(f"\n[dim]Exportado a {export}[/dim]")
+
+
+@cli.command("publish-shopify")
+@click.argument("product_id")
+@click.option("--no-landing", is_flag=True, default=False, help="Solo crea el producto, sin landing page.")
+@click.option("--draft", is_flag=True, default=False, help="Publica en borrador (no visible en tienda).")
+def publish_shopify(product_id: str, no_landing: bool, draft: bool):
+    """Publica un producto de Dropi (por ID) en tu tienda Shopify con landing page."""
+    try:
+        dropi = DropiClient()
+    except DropiError as e:
+        console.print(f"[red]Error Dropi:[/red] {e}")
+        sys.exit(1)
+
+    try:
+        shopify = ShopifyClient()
+    except ShopifyError as e:
+        console.print(f"[red]Error Shopify:[/red] {e}")
+        sys.exit(1)
+
+    with console.status(f"Obteniendo producto {product_id} de Dropi..."):
+        try:
+            product = dropi.get_product_detail(product_id)
+        except DropiError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            sys.exit(1)
+
+    from .dropi_client import _score_product
+    product.score = _score_product(product)
+
+    console.print(f"[bold]{product.name}[/bold]  score={product.score}/100")
+
+    with console.status("Publicando en Shopify..."):
+        try:
+            result = shopify.publish_dropi_product(
+                product,
+                create_landing=not no_landing,
+                published=not draft,
+            )
+        except ShopifyError as e:
+            console.print(f"[red]Error Shopify:[/red] {e}")
+            sys.exit(1)
+
+    _render_shopify_result(result)
+
+
+@cli.command("auto-publish")
+@click.option("--category", "-C", default=None, help="Categoria en Dropi.")
+@click.option("--search", "-s", default=None, help="Texto de busqueda.")
+@click.option("--min-score", default=70, type=int, show_default=True, help="Score minimo para publicar.")
+@click.option("--limit", "-n", default=5, type=int, show_default=True, help="Maximo de productos a publicar.")
+@click.option("--no-landing", is_flag=True, default=False, help="Omite la landing page.")
+@click.option("--draft", is_flag=True, default=False, help="Publica en borrador.")
+@click.option("--dry-run", is_flag=True, default=False, help="Muestra productos sin publicar.")
+def auto_publish(
+    category: str,
+    search: str,
+    min_score: int,
+    limit: int,
+    no_landing: bool,
+    draft: bool,
+    dry_run: bool,
+):
+    """Pipeline automatico: encuentra ganadores en Dropi y los publica en Shopify."""
+    try:
+        dropi = DropiClient()
+    except DropiError as e:
+        console.print(f"[red]Error Dropi:[/red] {e}")
+        sys.exit(1)
+
+    if not dry_run:
+        try:
+            shopify = ShopifyClient()
+        except ShopifyError as e:
+            console.print(f"[red]Error Shopify:[/red] {e}")
+            sys.exit(1)
+    else:
+        shopify = None  # type: ignore[assignment]
+
+    console.print(
+        Panel(
+            f"Buscando productos con score >= [bold]{min_score}[/bold]  |  limite={limit}  |  "
+            + ("[yellow]DRY RUN[/yellow]" if dry_run else "[green]PUBLICANDO[/green]"),
+            title="[bold]Auto-Publish Dropi → Shopify[/bold]",
+        )
+    )
+
+    with console.status("Buscando productos ganadores en Dropi..."):
+        try:
+            winners = list(
+                dropi.get_winning_products(
+                    category_id=category,
+                    search=search,
+                    min_score=min_score,
+                    limit=limit,
+                )
+            )
+        except DropiError as e:
+            console.print(f"[red]Error Dropi:[/red] {e}")
+            sys.exit(1)
+
+    if not winners:
+        console.print(f"[yellow]Sin productos con score >= {min_score}.[/yellow]")
+        return
+
+    console.print(f"[green]{len(winners)} ganadores encontrados.[/green]\n")
+    _render_dropi_products(winners)
+
+    if dry_run:
+        console.print("\n[dim]Modo dry-run: nada fue publicado.[/dim]")
+        return
+
+    results: list[ShopifyPublishResult] = []
+    for i, product in enumerate(winners, 1):
+        with console.status(f"[{i}/{len(winners)}] Publicando '{product.name}'..."):
+            try:
+                result = shopify.publish_dropi_product(
+                    product,
+                    create_landing=not no_landing,
+                    published=not draft,
+                )
+                results.append(result)
+                console.print(f"  [green]✓[/green] {product.name}")
+            except ShopifyError as e:
+                console.print(f"  [red]✗[/red] {product.name}: {e}")
+
+    console.print(f"\n[bold green]{len(results)}/{len(winners)} productos publicados.[/bold green]")
+    for r in results:
+        console.print(f"  Producto: {r.product_url}")
+        if r.landing_page_url:
+            console.print(f"  Landing:  {r.landing_page_url}")
+
+
+def _render_dropi_products(products: list[DropiProduct]):
+    t = Table(
+        title="Productos Ganadores Dropi",
+        show_header=True,
+        header_style="bold cyan",
+    )
+    t.add_column("ID", style="dim", width=8)
+    t.add_column("Producto")
+    t.add_column("Precio", justify="right")
+    t.add_column("Margen %", justify="right")
+    t.add_column("Pedidos", justify="right")
+    t.add_column("Stock", justify="right")
+    t.add_column("Score", justify="right")
+
+    for p in products:
+        score_style = "green" if p.score >= 80 else "yellow" if p.score >= 60 else "red"
+        margin_str = f"{p.margin_pct:.0f}%" if p.margin_pct else "-"
+        t.add_row(
+            p.id,
+            p.name[:45] + ("…" if len(p.name) > 45 else ""),
+            f"${p.price:,.0f}",
+            margin_str,
+            f"{p.orders_count:,}",
+            str(p.stock),
+            f"[{score_style}]{p.score}[/{score_style}]",
+        )
+    console.print(t)
+
+
+def _render_shopify_result(result: ShopifyPublishResult):
+    grid = Table.grid(padding=(0, 2))
+    grid.add_column(style="bold cyan")
+    grid.add_column()
+    grid.add_row("Tienda:", result.store_domain)
+    grid.add_row("Producto ID:", result.product_id)
+    grid.add_row("Producto URL:", result.product_url)
+    if result.landing_page_url:
+        grid.add_row("Landing URL:", result.landing_page_url)
+    console.print(
+        Panel(grid, title="[bold green]Publicado en Shopify[/bold green]", border_style="green")
+    )
+
+
+def _export_dropi_products(products: list[DropiProduct], path: Path):
+    data = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "price": p.price,
+            "compare_at_price": p.compare_at_price,
+            "margin_pct": round(p.margin_pct, 1),
+            "stock": p.stock,
+            "orders_count": p.orders_count,
+            "rating": p.rating,
+            "score": p.score,
+            "category": p.category,
+            "images": p.images,
+        }
+        for p in products
+    ]
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _resolve_industry(value: str) -> str:
