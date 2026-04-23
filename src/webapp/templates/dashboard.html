@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dropi Market Radar — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+</head>
+<body>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header class="top-nav">
+  <div class="brand">
+    <span class="brand-logo">◆</span>
+    <span class="brand-name">Dropi<span>Market Radar</span></span>
+  </div>
+  {% if demo %}
+  <div class="demo-badge">MODO DEMO · datos de ejemplo</div>
+  {% else %}
+  <div class="live-badge"><span class="live-dot"></span>CONECTADO A APIS</div>
+  {% endif %}
+</header>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero">
+  <h1>¿Cuántas personas venden este producto en Colombia?</h1>
+  <p>Pega el nombre del producto desde Dropi y te decimos en segundos si vale la pena.</p>
+
+  <form id="search-form" class="search-form">
+    <div class="search-box">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        id="query"
+        name="query"
+        placeholder="Ej: masajeador cuello, crema anticelulitica, luz led ring…"
+        autocomplete="off"
+        required
+      />
+      <select id="country" name="country">
+        <option value="CO" selected>🇨🇴 Colombia</option>
+        <option value="MX">🇲🇽 México</option>
+        <option value="AR">🇦🇷 Argentina</option>
+        <option value="CL">🇨🇱 Chile</option>
+        <option value="PE">🇵🇪 Perú</option>
+      </select>
+      <button type="submit" id="analyze-btn">
+        <span class="btn-text">Analizar</span>
+        <span class="btn-loader" hidden>
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </button>
+    </div>
+    {% if demo %}
+    <div class="example-chips">
+      <span class="chip-label">Prueba con:</span>
+      <button type="button" class="chip" data-q="masajeador cuello">masajeador cuello</button>
+      <button type="button" class="chip" data-q="crema anticelulitica">crema anticelulítica</button>
+      <button type="button" class="chip" data-q="luz led ring">luz led ring</button>
+      <button type="button" class="chip" data-q="termo electrico taza">termo eléctrico taza</button>
+    </div>
+    {% endif %}
+  </form>
+</section>
+
+<!-- ═══════════════════════ ESTADO INICIAL ═══════════════════════ -->
+<section id="empty-state" class="empty-state">
+  <div class="empty-icon">📦</div>
+  <h3>Aquí verás el análisis</h3>
+  <p>Busca un producto arriba y te mostraré cuántos vendedores hay en Mercado Libre, cuántos anuncios pagados hay en Facebook y cuántas publicaciones hay en Marketplace — todo combinado en un solo veredicto.</p>
+</section>
+
+<!-- ═══════════════════════ LOADING ═══════════════════════ -->
+<section id="loading-state" class="loading-state" hidden>
+  <div class="loading-sources">
+    <div class="loading-card loading-ml">
+      <div class="loading-logo">🟡</div>
+      <div class="loading-name">Mercado Libre</div>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+    <div class="loading-card loading-ads">
+      <div class="loading-logo">🔵</div>
+      <div class="loading-name">Facebook Ad Library</div>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+    <div class="loading-card loading-mkt">
+      <div class="loading-logo">🟢</div>
+      <div class="loading-name">Facebook Marketplace</div>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+  <div class="loading-caption">Consultando 3 fuentes en paralelo…</div>
+</section>
+
+<!-- ═══════════════════════ ERROR ═══════════════════════ -->
+<section id="error-state" class="error-state" hidden>
+  <div class="error-icon">⚠️</div>
+  <h3 id="error-title">Algo salió mal</h3>
+  <p id="error-message"></p>
+  <button class="btn-secondary" onclick="resetToEmpty()">Intentar otra búsqueda</button>
+</section>
+
+<!-- ═══════════════════════ RESULTADOS ═══════════════════════ -->
+<section id="results" class="results" hidden>
+
+  <!-- Header del resultado -->
+  <div class="result-header">
+    <div>
+      <div class="result-label">ANÁLISIS DE</div>
+      <h2 id="result-query">—</h2>
+    </div>
+    <div class="result-actions">
+      <span id="result-country-flag" class="country-flag">🇨🇴</span>
+      <button class="btn-ghost" id="download-btn" title="Descargar JSON">⬇ JSON</button>
+      <button class="btn-ghost" onclick="resetToEmpty()">✕ Nueva búsqueda</button>
+    </div>
+  </div>
+
+  <!-- VEREDICTO GRANDE -->
+  <div id="verdict-box" class="verdict-box verdict-yellow">
+    <div class="verdict-icon" id="verdict-icon">⚡</div>
+    <div class="verdict-body">
+      <div class="verdict-level" id="verdict-level">TESTEAR CON DIFERENCIACIÓN</div>
+      <div class="verdict-text" id="verdict-text">—</div>
+    </div>
+  </div>
+
+  <!-- GAUGES -->
+  <div class="gauges-row">
+    <div class="gauge-card">
+      <div class="gauge-label">📈 Demanda del mercado</div>
+      <div class="gauge-bar-wrap">
+        <div class="gauge-bar gauge-demand" id="demand-bar"></div>
+      </div>
+      <div class="gauge-footer">
+        <div class="gauge-value" id="demand-value">—</div>
+        <div class="gauge-sublabel" id="demand-label">—</div>
+      </div>
+    </div>
+    <div class="gauge-card">
+      <div class="gauge-label">🏪 Saturación del mercado</div>
+      <div class="gauge-bar-wrap">
+        <div class="gauge-bar gauge-sat" id="sat-bar"></div>
+      </div>
+      <div class="gauge-footer">
+        <div class="gauge-value" id="sat-value">—</div>
+        <div class="gauge-sublabel" id="sat-label">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOTALES -->
+  <div class="totals-row">
+    <div class="total-box">
+      <div class="t-val" id="total-sellers">—</div>
+      <div class="t-lbl">vendedores totales identificados</div>
+    </div>
+    <div class="total-box">
+      <div class="t-val" id="total-ads">—</div>
+      <div class="t-lbl">anuncios pagados activos</div>
+    </div>
+    <div class="total-box">
+      <div class="t-val" id="oldest-days">—</div>
+      <div class="t-lbl">días lleva el más veterano</div>
+    </div>
+  </div>
+
+  <!-- 3 FUENTES -->
+  <div class="sources-row">
+    <!-- Mercado Libre -->
+    <div class="source-card source-ml">
+      <div class="source-logo">🟡</div>
+      <div class="source-name">Mercado Libre</div>
+      <div class="metric">
+        <div class="metric-value" id="ml-sellers">—</div>
+        <div class="metric-label">vendedores activos</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row"><span>Publicaciones</span><span id="ml-listings">—</span></div>
+        <div class="mini-row"><span>Precio promedio</span><span id="ml-avg-price">—</span></div>
+        <div class="mini-row"><span>Rango de precio</span><span id="ml-range">—</span></div>
+        <div class="mini-row"><span>Ventas/mes est.</span><span id="ml-sales">—</span></div>
+      </div>
+    </div>
+
+    <!-- Facebook Ad Library -->
+    <div class="source-card source-ads">
+      <div class="source-logo">🔵</div>
+      <div class="source-name">Facebook Ad Library</div>
+      <div class="metric">
+        <div class="metric-value" id="ads-advertisers">—</div>
+        <div class="metric-label">anunciantes activos</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row"><span>Anuncios totales</span><span id="ads-total">—</span></div>
+        <div class="mini-row"><span>Más antiguo</span><span id="ads-oldest">—</span></div>
+        <div class="mini-row"><span>Nuevos 7 días</span><span id="ads-new7">—</span></div>
+        <div class="mini-row"><span>Promedio corriendo</span><span id="ads-avg">—</span></div>
+      </div>
+    </div>
+
+    <!-- Facebook Marketplace -->
+    <div class="source-card source-mkt">
+      <div class="source-logo">🟢</div>
+      <div class="source-name">Facebook Marketplace</div>
+      <div class="metric">
+        <div class="metric-value" id="mkt-listings">—</div>
+        <div class="metric-label">publicaciones activas</div>
+      </div>
+      <div class="mini-metrics">
+        <div class="mini-row"><span>Precio más bajo</span><span id="mkt-min">—</span></div>
+        <div class="mini-row"><span>Precio más alto</span><span id="mkt-max">—</span></div>
+        <div class="mini-row"><span>Moneda</span><span id="mkt-currency">—</span></div>
+        <div class="mini-row" id="mkt-error-row" hidden><span>Estado</span><span id="mkt-error">—</span></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════ HISTORIAL ═══════════════════════ -->
+<section id="history-section" class="history" hidden>
+  <h3>Búsquedas recientes</h3>
+  <div id="history-list" class="history-list"></div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer>
+  <div>Dropi Market Radar · Triangulación de Mercado</div>
+  {% if demo %}
+  <div class="footer-note">Estás en modo demo. Para datos reales, configura tus tokens en <code>.env</code> y reinicia sin <code>--demo</code>.</div>
+  {% endif %}
+</footer>
+
+<script>
+const IS_DEMO = {{ 'true' if demo else 'false' }};
+</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+</body>
+</html>

@@ -12,9 +12,11 @@ from .analyzer import analyze
 from .arbitrage import find_opportunities
 from .client import MetaAdLibraryClient, MetaAdLibraryError
 from .csv_loader import CsvLoaderError, load_ads_from_csv
+from .mercadolibre import MercadoLibreResult
 from .models import Ad, MarketAnalysis
 from .scraper import MetaAdLibraryScraper, ScraperError
 from .tiktok import INDUSTRIES_HINT, TikTokCreativeCenter, TikTokError
+from .triangulator import Triangulator, TriangulationResult
 
 console = Console()
 
@@ -366,6 +368,223 @@ def arbitrage(source: str, target: str, period: str, pages: int, industry: Optio
         "Falsos positivos posibles si el anunciante usa otro nombre en {target}.\n"
         "Cruza con Meta Ad Library cuando tengas token aprobado.[/dim]".format(target=target)
     )
+
+
+@cli.command()
+@click.argument("query")
+@click.option("--pais", "-p", default="CO", help="Codigo ISO del pais (CO, MX, AR, CL, PE...).")
+@click.option("--export", type=click.Path(), help="Exportar resultado a JSON.")
+def triangulate(query: str, pais: str, export: Optional[str]):
+    """Triangula un producto en Mercado Libre + FB Ads Library + FB Marketplace.
+
+    Ejemplo:
+      dropi triangulate "masajeador cuello electrico" --pais CO
+    """
+    console.print(
+        f"\n[bold cyan]Triangulando[/bold cyan] '[bold]{query}[/bold]' en [bold]{pais}[/bold]...\n"
+        "Consultando 3 fuentes en paralelo, espera unos segundos.\n"
+    )
+
+    import os
+    engine = Triangulator(
+        meta_token=os.getenv("META_ACCESS_TOKEN"),
+        ml_max_results=100,
+        ads_max_pages=5,
+        use_scraper_fallback=True,
+    )
+
+    with console.status("Consultando Mercado Libre, Meta Ad Library y Facebook Marketplace..."):
+        result = engine.run(query=query, country=pais)
+
+    _render_triangulation(result)
+
+    if export:
+        _export_triangulation(result, Path(export))
+        console.print(f"\n[dim]Exportado a {export}[/dim]")
+
+
+def _render_triangulation(r: TriangulationResult):
+    # ── Resumen de fuentes ─────────────────────────────────
+    sources_table = Table(title="Datos por fuente", header_style="bold", show_lines=True)
+    sources_table.add_column("Fuente", style="cyan", min_width=22)
+    sources_table.add_column("Vendedores / Anunciantes", justify="right")
+    sources_table.add_column("Publicaciones / Anuncios", justify="right")
+    sources_table.add_column("Detalle")
+
+    if r.mercadolibre:
+        ml = r.mercadolibre
+        currency = ml.currency
+        price_str = (
+            f"${ml.min_price:,.0f}–${ml.max_price:,.0f} {currency}"
+            if ml.min_price > 0 else "N/D"
+        )
+        sources_table.add_row(
+            "🟡  Mercado Libre",
+            str(ml.unique_sellers),
+            str(ml.total_listings),
+            f"Precio: {price_str} · Ventas/mes est.: {ml.estimated_monthly_sales:,}",
+        )
+    else:
+        sources_table.add_row("🟡  Mercado Libre", "—", "—", "[dim]Sin datos[/dim]")
+
+    if r.ads_library:
+        ads = r.ads_library
+        sources_table.add_row(
+            "🔵  Facebook Ad Library",
+            str(ads.unique_advertisers),
+            str(ads.total_ads),
+            f"Anuncio mas viejo: {ads.oldest_ad_days}d · Nuevos 7d: {ads.new_entrants_7d}",
+        )
+    else:
+        sources_table.add_row("🔵  Facebook Ad Library", "—", "—", "[dim]Sin datos[/dim]")
+
+    if r.marketplace and r.marketplace.available:
+        mkt = r.marketplace
+        price_mkt = (
+            f"${mkt.min_price:,.0f}–${mkt.max_price:,.0f} {mkt.currency}"
+            if mkt.min_price > 0 else "N/D"
+        )
+        sources_table.add_row(
+            "🟢  Facebook Marketplace",
+            "—",
+            str(mkt.total_listings),
+            f"Precio: {price_mkt}",
+        )
+    else:
+        mkt_note = "[dim]Requiere Playwright instalado[/dim]"
+        if r.marketplace and r.marketplace.error:
+            mkt_note = f"[dim]{r.marketplace.error[:60]}[/dim]"
+        sources_table.add_row("🟢  Facebook Marketplace", "—", "—", mkt_note)
+
+    console.print(sources_table)
+
+    # ── Scores combinados ─────────────────────────────────
+    demand_color = "green" if r.demand_score >= 60 else "yellow" if r.demand_score >= 30 else "red"
+    sat_color    = "green" if r.saturation_score < 35 else "yellow" if r.saturation_score < 65 else "red"
+
+    summary = Table.grid(padding=(0, 3))
+    summary.add_column(style="bold", min_width=28)
+    summary.add_column()
+    summary.add_row("Demanda del mercado:",    f"[bold {demand_color}]{r.demand_score}/100[/bold {demand_color}]")
+    summary.add_row("Saturacion:",             f"[bold {sat_color}]{r.saturation_score}/100[/bold {sat_color}]")
+    summary.add_row("Vendedores totales:",     str(r.total_sellers))
+    summary.add_row("Anuncios pagados activos:", str(r.total_ads))
+    if r.oldest_ad_days > 0:
+        summary.add_row("Veterano mas antiguo:", f"{r.oldest_ad_days} dias corriendo")
+
+    console.print(Panel(summary, title="[bold]Resumen triangulado[/bold]", border_style="cyan"))
+
+    # ── Recomendación ─────────────────────────────────────
+    level_color = {
+        "TESTEAR":               "green",
+        "TESTEAR_DIFERENCIACION": "yellow",
+        "EVITAR":                "red",
+        "SIN_DATOS":             "dim",
+    }.get(r.recommendation_level, "white")
+
+    console.print(Panel(
+        f"[bold {level_color}]{r.recommendation}[/bold {level_color}]",
+        title="[bold]Recomendacion[/bold]",
+        border_style=level_color,
+    ))
+
+    if r.reasoning:
+        console.print("[bold]Por que:[/bold]")
+        for line in r.reasoning:
+            console.print(f"  - {line}")
+        console.print()
+
+
+def _export_triangulation(r: TriangulationResult, path: Path):
+    import dataclasses
+    data = {
+        "query": r.query,
+        "country": r.country,
+        "demand_score": r.demand_score,
+        "saturation_score": r.saturation_score,
+        "total_sellers": r.total_sellers,
+        "total_ads": r.total_ads,
+        "oldest_ad_days": r.oldest_ad_days,
+        "recommendation": r.recommendation,
+        "recommendation_level": r.recommendation_level,
+        "reasoning": r.reasoning,
+        "mercadolibre": None,
+        "ads_library": None,
+        "marketplace": None,
+    }
+    if r.mercadolibre:
+        ml = r.mercadolibre
+        data["mercadolibre"] = {
+            "total_listings": ml.total_listings,
+            "unique_sellers": ml.unique_sellers,
+            "avg_price": ml.avg_price,
+            "min_price": ml.min_price,
+            "max_price": ml.max_price,
+            "currency": ml.currency,
+            "estimated_monthly_sales": ml.estimated_monthly_sales,
+        }
+    if r.ads_library:
+        ads = r.ads_library
+        data["ads_library"] = {
+            "total_ads": ads.total_ads,
+            "unique_advertisers": ads.unique_advertisers,
+            "oldest_ad_days": ads.oldest_ad_days,
+            "newest_ad_days": ads.newest_ad_days,
+            "avg_days_running": ads.avg_days_running,
+            "new_entrants_7d": ads.new_entrants_7d,
+            "saturation_score": ads.saturation_score,
+        }
+    if r.marketplace:
+        mkt = r.marketplace
+        data["marketplace"] = {
+            "total_listings": mkt.total_listings,
+            "min_price": mkt.min_price,
+            "max_price": mkt.max_price,
+            "currency": mkt.currency,
+            "available": mkt.available,
+        }
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@cli.command()
+@click.option("--port", "-p", default=5000, type=int, help="Puerto donde escuchar.")
+@click.option("--host", default="127.0.0.1", help="Host/IP donde escuchar (0.0.0.0 para exponer).")
+@click.option("--demo", is_flag=True, help="Modo demo: datos de ejemplo, sin APIs reales.")
+def serve(port: int, host: str, demo: bool):
+    """Lanza el dashboard web en el navegador.
+
+    Ejemplos:
+      dropi serve --demo              # prueba la UI con datos de ejemplo
+      dropi serve                      # datos reales (requiere .env configurado)
+      dropi serve --host 0.0.0.0 -p 8080  # expone el dashboard en la red
+    """
+    try:
+        from .webapp import create_app
+    except ImportError as exc:
+        console.print(f"[red]Error importando la webapp:[/red] {exc}")
+        console.print("Instala dependencias: [cyan]pip install flask[/cyan]")
+        sys.exit(1)
+
+    app = create_app(demo=demo)
+
+    mode_color = "yellow" if demo else "green"
+    mode_label = "MODO DEMO (datos de ejemplo)" if demo else "MODO LIVE (APIs reales)"
+
+    console.print()
+    console.print(Panel(
+        f"[bold {mode_color}]{mode_label}[/bold {mode_color}]\n\n"
+        f"Dashboard disponible en: [bold cyan]http://{host}:{port}[/bold cyan]\n"
+        f"Presiona Ctrl+C para detener.",
+        title="[bold]Dropi Market Radar[/bold]",
+        border_style="cyan",
+    ))
+    console.print()
+
+    # Silencia el output verboso de Flask
+    import logging
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+
+    app.run(host=host, port=port, debug=False)
 
 
 def _resolve_industry(value: str) -> str:
