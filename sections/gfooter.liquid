@@ -1,0 +1,345 @@
+<footer class="gf-footer" id="gf-footer-{{ section.id }}">
+  <div class="gf-footer__inner">
+
+    <div class="gf-footer__col gf-footer__col--newsletter">
+      <h3 class="gf-footer__heading">{{ section.settings.brand_name }}</h3>
+      <p class="gf-footer__text">{{ section.settings.newsletter_text }}</p>
+      {% form 'customer', id: 'gf-newsletter-form' %}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        <div class="gf-newsletter">
+          <input
+            class="gf-newsletter__input"
+            type="email"
+            name="contact[email]"
+            placeholder="{{ section.settings.email_placeholder }}"
+            required
+            aria-label="{{ section.settings.email_placeholder }}"
+          >
+          <button class="gf-newsletter__btn" type="submit">
+            {{ section.settings.subscribe_label }}
+          </button>
+        </div>
+        {%- if form.posted_successfully? -%}
+          <p class="gf-newsletter__success">{{ section.settings.success_message }}</p>
+        {%- endif -%}
+      {% endform %}
+    </div>
+
+    <div class="gf-footer__col gf-footer__col--links">
+      <h3 class="gf-footer__heading">{{ section.settings.links_title }}</h3>
+      <ul class="gf-footer__list">
+        {% for link in linklists[section.settings.menu].links %}
+          <li><a class="gf-footer__link" href="{{ link.url }}">{{ link.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="gf-footer__col gf-footer__col--contact">
+      <h3 class="gf-footer__heading">{{ section.settings.contact_title }}</h3>
+      <p class="gf-footer__text">{{ section.settings.contact_text }}</p>
+      <a class="gf-footer__link" href="mailto:{{ section.settings.contact_email }}">{{ section.settings.contact_email }}</a>
+      <p class="gf-footer__hours">{{ section.settings.hours_weekday }}</p>
+      <p class="gf-footer__hours">{{ section.settings.hours_weekend }}</p>
+    </div>
+
+  </div>
+
+  <div class="gf-footer__bottom">
+    <p class="gf-footer__copy">{{ section.settings.copyright }}</p>
+  </div>
+</footer>
+
+<style>
+#gf-footer-{{ section.id }} {
+  background-color: {{ section.settings.bg_color }};
+  color: {{ section.settings.text_color }};
+  font-family: inherit;
+  box-sizing: border-box;
+}
+#gf-footer-{{ section.id }} *,
+#gf-footer-{{ section.id }} *::before,
+#gf-footer-{{ section.id }} *::after {
+  box-sizing: border-box;
+}
+#gf-footer-{{ section.id }} .gf-footer__inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 40px 40px;
+  gap: 48px;
+}
+#gf-footer-{{ section.id }} .gf-footer__col {
+  display: flex;
+  flex-direction: column;
+}
+#gf-footer-{{ section.id }} .gf-footer__col--newsletter {
+  flex: 0 0 300px;
+  max-width: 300px;
+}
+#gf-footer-{{ section.id }} .gf-footer__col--links {
+  flex: 0 0 180px;
+}
+#gf-footer-{{ section.id }} .gf-footer__col--contact {
+  flex: 1;
+  max-width: 340px;
+}
+#gf-footer-{{ section.id }} .gf-footer__heading {
+  font-size: 14px;
+  font-weight: 700;
+  color: {{ section.settings.heading_color }};
+  margin: 0 0 16px;
+  letter-spacing: 0.02em;
+}
+#gf-footer-{{ section.id }} .gf-footer__text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: {{ section.settings.text_color }};
+  margin: 0 0 20px;
+}
+#gf-footer-{{ section.id }} .gf-newsletter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#gf-footer-{{ section.id }} .gf-newsletter__input {
+  background-color: transparent;
+  border: 1px solid {{ section.settings.input_border_color }};
+  color: {{ section.settings.text_color }};
+  font-size: 13px;
+  padding: 12px 16px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+#gf-footer-{{ section.id }} .gf-newsletter__input::placeholder {
+  color: {{ section.settings.text_color }};
+  opacity: 0.5;
+}
+#gf-footer-{{ section.id }} .gf-newsletter__input:focus {
+  border-color: {{ section.settings.link_color }};
+}
+#gf-footer-{{ section.id }} .gf-newsletter__btn {
+  background-color: transparent;
+  border: 1px solid {{ section.settings.input_border_color }};
+  color: {{ section.settings.text_color }};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  cursor: pointer;
+  width: fit-content;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+#gf-footer-{{ section.id }} .gf-newsletter__btn:hover {
+  background-color: {{ section.settings.text_color }};
+  color: {{ section.settings.bg_color }};
+}
+#gf-footer-{{ section.id }} .gf-newsletter__success {
+  font-size: 13px;
+  color: {{ section.settings.link_color }};
+  margin: 10px 0 0;
+}
+#gf-footer-{{ section.id }} .gf-footer__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#gf-footer-{{ section.id }} .gf-footer__link {
+  font-size: 13px;
+  color: {{ section.settings.link_color }};
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+#gf-footer-{{ section.id }} .gf-footer__link:hover {
+  opacity: 0.7;
+}
+#gf-footer-{{ section.id }} .gf-footer__hours {
+  font-size: 13px;
+  color: {{ section.settings.text_color }};
+  margin: 4px 0 0;
+}
+#gf-footer-{{ section.id }} .gf-footer__bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  border-top: 1px solid {{ section.settings.input_border_color }};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#gf-footer-{{ section.id }} .gf-footer__copy {
+  font-size: 12px;
+  color: {{ section.settings.text_color }};
+  opacity: 0.6;
+  margin: 0;
+}
+@media screen and (max-width: 900px) {
+  #gf-footer-{{ section.id }} .gf-footer__inner {
+    flex-direction: column;
+    padding: 40px 24px 24px;
+    gap: 36px;
+  }
+  #gf-footer-{{ section.id }} .gf-footer__col--newsletter,
+  #gf-footer-{{ section.id }} .gf-footer__col--contact {
+    flex: none;
+    max-width: 100%;
+    width: 100%;
+  }
+  #gf-footer-{{ section.id }} .gf-footer__col--links {
+    flex: none;
+    width: 100%;
+  }
+  #gf-footer-{{ section.id }} .gf-footer__bottom {
+    padding: 20px 24px;
+  }
+}
+</style>
+
+{% schema %}
+{
+  "name": "Footer Gala Ferron",
+  "tag": "section",
+  "class": "gf-footer-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Colores"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Fondo",
+      "default": "#0d0d0d"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Texto",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Titulos",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Enlaces",
+      "default": "#6ec6c6"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Bordes",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "Newsletter"
+    },
+    {
+      "type": "text",
+      "id": "brand_name",
+      "label": "Nombre de la marca",
+      "default": "Gala Ferron"
+    },
+    {
+      "type": "textarea",
+      "id": "newsletter_text",
+      "label": "Texto newsletter",
+      "default": "Recibe acceso exclusivo a nuestras nuevas colecciones, descuentos especiales y mucho mas."
+    },
+    {
+      "type": "text",
+      "id": "email_placeholder",
+      "label": "Placeholder email",
+      "default": "Tu direccion de email"
+    },
+    {
+      "type": "text",
+      "id": "subscribe_label",
+      "label": "Texto del boton",
+      "default": "Suscribirse"
+    },
+    {
+      "type": "text",
+      "id": "success_message",
+      "label": "Mensaje de exito",
+      "default": "Gracias por suscribirte!"
+    },
+    {
+      "type": "header",
+      "content": "Menu de enlaces"
+    },
+    {
+      "type": "text",
+      "id": "links_title",
+      "label": "Titulo columna",
+      "default": "Informacion"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "footer"
+    },
+    {
+      "type": "header",
+      "content": "Atencion al cliente"
+    },
+    {
+      "type": "text",
+      "id": "contact_title",
+      "label": "Titulo columna",
+      "default": "Atencion al cliente"
+    },
+    {
+      "type": "textarea",
+      "id": "contact_text",
+      "label": "Texto de contacto",
+      "default": "Tienes alguna pregunta? No dudes en contactarnos. Estamos encantados de ayudarte."
+    },
+    {
+      "type": "text",
+      "id": "contact_email",
+      "label": "Email de contacto",
+      "default": "galaferronhelp@hotmail.com"
+    },
+    {
+      "type": "text",
+      "id": "hours_weekday",
+      "label": "Horario entre semana",
+      "default": "LU / VI 09:00 - 17:00"
+    },
+    {
+      "type": "text",
+      "id": "hours_weekend",
+      "label": "Horario fin de semana",
+      "default": "SA / DO 10:00 - 17:00"
+    },
+    {
+      "type": "header",
+      "content": "Pie de pagina"
+    },
+    {
+      "type": "text",
+      "id": "copyright",
+      "label": "Texto copyright",
+      "default": "2026 Gala Ferron."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Footer Gala Ferron"
+    }
+  ]
+}
+{% endschema %}
