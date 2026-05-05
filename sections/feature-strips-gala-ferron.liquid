@@ -1,18 +1,13 @@
-{% comment %}
-  Section: Feature Strips - Gala Ferron
-  Three trust-building feature blocks: Envio Gratis, Ayuda, Pago Seguro
-{% endcomment %}
-
 <section class="gf-features" id="gf-features-{{ section.id }}">
   <div class="gf-features__inner">
 
     <div class="gf-feature">
       <div class="gf-feature__icon-wrap">
-        <svg class="gf-feature__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <rect x="4" y="18" width="40" height="28" rx="3" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <path d="M44 26h8l8 10v10H44V26z" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
-          <circle cx="16" cy="50" r="5" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <circle cx="50" cy="50" r="5" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true" width="40" height="40">
+          <rect x="4" y="18" width="40" height="28" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M44 26h8l8 10v10H44V26z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="16" cy="50" r="5" stroke="currentColor" stroke-width="2.5"/>
+          <circle cx="50" cy="50" r="5" stroke="currentColor" stroke-width="2.5"/>
           <line x1="4" y1="34" x2="44" y2="34" stroke="currentColor" stroke-width="2"/>
           <line x1="16" y1="18" x2="16" y2="34" stroke="currentColor" stroke-width="2"/>
           <line x1="28" y1="18" x2="28" y2="34" stroke="currentColor" stroke-width="2"/>
@@ -22,12 +17,12 @@
       <p class="gf-feature__desc">{{ section.settings.desc_shipping }}</p>
     </div>
 
-    <div class="gf-features__divider" aria-hidden="true"></div>
+    <div class="gf-features__divider"></div>
 
     <div class="gf-feature">
       <div class="gf-feature__icon-wrap">
-        <svg class="gf-feature__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <path d="M8 12C8 9.79 9.79 8 12 8h40c2.21 0 4 1.79 4 4v28c0 2.21-1.79 4-4 4H20L8 56V12z" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true" width="40" height="40">
+          <path d="M8 12C8 9.79 9.79 8 12 8h40c2.21 0 4 1.79 4 4v28c0 2.21-1.79 4-4 4H20L8 56V12z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
           <circle cx="22" cy="26" r="2.5" fill="currentColor"/>
           <circle cx="32" cy="26" r="2.5" fill="currentColor"/>
           <circle cx="42" cy="26" r="2.5" fill="currentColor"/>
@@ -35,17 +30,15 @@
       </div>
       <h3 class="gf-feature__title">{{ section.settings.title_help }}</h3>
       <p class="gf-feature__desc">{{ section.settings.desc_help }}</p>
-      <a class="gf-feature__link" href="mailto:{{ section.settings.email }}">
-        {{- section.settings.email -}}
-      </a>
+      <a class="gf-feature__link" href="mailto:{{ section.settings.email }}">{{ section.settings.email }}</a>
     </div>
 
-    <div class="gf-features__divider" aria-hidden="true"></div>
+    <div class="gf-features__divider"></div>
 
     <div class="gf-feature">
       <div class="gf-feature__icon-wrap">
-        <svg class="gf-feature__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-          <path d="M32 4L8 14v18c0 14 12 24 24 28 12-4 24-14 24-28V14L32 4z" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true" width="40" height="40">
+          <path d="M32 4L8 14v18c0 14 12 24 24 28 12-4 24-14 24-28V14L32 4z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
           <polyline points="20,32 28,40 46,22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
@@ -63,200 +56,140 @@
 </section>
 
 <style>
-  #gf-features-{{ section.id }} {
-    background-color: {{ section.settings.bg_color }};
-    padding: 56px 24px;
-    font-family: inherit;
-    box-sizing: border-box;
-  }
-
+#gf-features-{{ section.id }} {
+  background-color: {{ section.settings.bg_color }};
+  padding: 56px 24px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+#gf-features-{{ section.id }} .gf-features__inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+#gf-features-{{ section.id }} .gf-features__divider {
+  width: 1px;
+  height: 120px;
+  background-color: {{ section.settings.divider_color }};
+  align-self: center;
+  flex-shrink: 0;
+  opacity: 0.4;
+}
+#gf-features-{{ section.id }} .gf-feature {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 36px;
+  transition: transform 0.3s ease;
+}
+#gf-features-{{ section.id }} .gf-feature:hover {
+  transform: translateY(-4px);
+}
+#gf-features-{{ section.id }} .gf-feature__icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: {{ section.settings.icon_bg_color }};
+  border: 1px solid {{ section.settings.icon_border_color }};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  transition: box-shadow 0.3s ease;
+  color: {{ section.settings.accent_color }};
+}
+#gf-features-{{ section.id }} .gf-feature:hover .gf-feature__icon-wrap {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+#gf-features-{{ section.id }} .gf-feature__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: {{ section.settings.title_color }};
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+#gf-features-{{ section.id }} .gf-feature__desc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: {{ section.settings.text_color }};
+  margin: 0 0 10px;
+  max-width: 260px;
+}
+#gf-features-{{ section.id }} .gf-feature__link {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: {{ section.settings.accent_color }};
+  text-decoration: none;
+  border-bottom: 1px solid {{ section.settings.accent_color }};
+  padding-bottom: 1px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+#gf-features-{{ section.id }} .gf-feature__link:hover {
+  opacity: 1;
+}
+#gf-features-{{ section.id }} .gf-feature__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+#gf-features-{{ section.id }} .gf-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: {{ section.settings.text_color }};
+  background-color: {{ section.settings.badge_bg_color }};
+  border: 1px solid {{ section.settings.icon_border_color }};
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+@media screen and (max-width: 768px) {
   #gf-features-{{ section.id }} .gf-features__inner {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: start;
-    -ms-flex-align: start;
-    align-items: flex-start;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  #gf-features-{{ section.id }} .gf-features__divider {
-    width: 1px;
-    height: 120px;
-    background-color: {{ section.settings.divider_color }};
-    -ms-flex-item-align: center;
-    align-self: center;
-    -ms-flex-negative: 0;
-    flex-shrink: 0;
-    opacity: 0.4;
-  }
-
-  #gf-features-{{ section.id }} .gf-feature {
-    -webkit-box-flex: 1;
-    -ms-flex: 1;
-    flex: 1;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -ms-flex-direction: column;
     flex-direction: column;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
     align-items: center;
-    text-align: center;
-    padding: 32px 36px;
-    -webkit-transition: -webkit-transform 0.3s ease;
-    transition: transform 0.3s ease;
-    cursor: default;
   }
-
-  #gf-features-{{ section.id }} .gf-feature:hover {
-    -webkit-transform: translateY(-4px);
-    transform: translateY(-4px);
+  #gf-features-{{ section.id }} .gf-features__divider {
+    width: 60px;
+    height: 1px;
   }
-
-  #gf-features-{{ section.id }} .gf-feature__icon-wrap {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background-color: {{ section.settings.icon_bg_color }};
-    border: 1.5px solid {{ section.settings.icon_border_color }};
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    -webkit-transition: box-shadow 0.3s ease;
-    transition: box-shadow 0.3s ease;
+  #gf-features-{{ section.id }} .gf-feature {
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 340px;
   }
-
-  #gf-features-{{ section.id }} .gf-feature:hover .gf-feature__icon-wrap {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__icon {
-    width: 40px;
-    height: 40px;
-    color: {{ section.settings.accent_color }};
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: {{ section.settings.title_color }};
-    margin: 0 0 12px;
-    line-height: 1.4;
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__desc {
-    font-size: 14px;
-    line-height: 1.65;
-    color: {{ section.settings.text_color }};
-    margin: 0 0 10px;
-    max-width: 260px;
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__link {
-    display: inline-block;
-    font-size: 13px;
-    font-weight: 600;
-    color: {{ section.settings.accent_color }};
-    text-decoration: none;
-    border-bottom: 1px solid {{ section.settings.accent_color }};
-    padding-bottom: 1px;
-    opacity: 0.8;
-    -webkit-transition: opacity 0.3s ease;
-    transition: opacity 0.3s ease;
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__link:hover {
-    opacity: 1;
-  }
-
-  #gf-features-{{ section.id }} .gf-feature__badges {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -ms-flex-wrap: wrap;
-    flex-wrap: wrap;
-    gap: 6px;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    margin-top: 6px;
-  }
-
-  #gf-features-{{ section.id }} .gf-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: {{ section.settings.text_color }};
-    background-color: {{ section.settings.badge_bg_color }};
-    border: 1px solid {{ section.settings.icon_border_color }};
-    border-radius: 20px;
-    padding: 3px 10px;
-    white-space: nowrap;
-  }
-
-  @media screen and (max-width: 768px) {
-    #gf-features-{{ section.id }} .gf-features__inner {
-      -webkit-box-orient: vertical;
-      -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-      flex-direction: column;
-      -webkit-box-align: center;
-      -ms-flex-align: center;
-      align-items: center;
-    }
-
-    #gf-features-{{ section.id }} .gf-features__divider {
-      width: 60px;
-      height: 1px;
-      margin: 0;
-    }
-
-    #gf-features-{{ section.id }} .gf-feature {
-      padding: 28px 24px;
-      width: 100%;
-      max-width: 340px;
-    }
-  }
+}
 </style>
 
 {% schema %}
 {
-  "name": "Feature Strips - Gala Ferron",
+  "name": "Feature Strips Gala Ferron",
   "tag": "section",
   "class": "gf-features-section",
   "settings": [
     {
       "type": "header",
-      "content": "Colores generales"
+      "content": "Colores"
     },
     {
       "type": "color",
       "id": "bg_color",
-      "label": "Fondo de la seccion",
+      "label": "Fondo",
       "default": "#ffffff"
     },
     {
       "type": "color",
       "id": "accent_color",
-      "label": "Color de acento (iconos y enlaces)",
+      "label": "Acento y enlaces",
       "default": "#1a1a1a"
     },
     {
@@ -286,13 +219,13 @@
     {
       "type": "color",
       "id": "icon_border_color",
-      "label": "Borde del icono y badges",
+      "label": "Borde del icono",
       "default": "#e0e0e0"
     },
     {
       "type": "color",
       "id": "badge_bg_color",
-      "label": "Fondo de las etiquetas de pago",
+      "label": "Fondo etiquetas de pago",
       "default": "#f5f5f5"
     },
     {
@@ -347,12 +280,12 @@
       "type": "textarea",
       "id": "desc_payment",
       "label": "Descripcion",
-      "default": "Paga de forma segura a traves de PayPal, tarjeta de credito, Google Pay o Apple Pay."
+      "default": "Paga de forma segura con PayPal, tarjeta de credito, Google Pay o Apple Pay."
     }
   ],
   "presets": [
     {
-      "name": "Feature Strips - Gala Ferron"
+      "name": "Feature Strips Gala Ferron"
     }
   ]
 }
