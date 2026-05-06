@@ -66,8 +66,7 @@
 
     {%- if s.texto_boton != blank and s.url_boton != blank -%}
       <div class="hv2-fade hv2-d4">
-        <a class="hv2-btn" href="{{ s.url_boton }}"
-          style="border-color:{{ s.color_boton_borde }};color:{{ s.color_boton_texto }};background:{{ s.color_boton_fondo }};">
+        <a class="hv2-btn" href="{{ s.url_boton }}">
           {{ s.texto_boton }}
         </a>
       </div>
@@ -101,18 +100,19 @@
     justify-content: center;
   }
   #hv2-strip-{{ sid }} .hv2-timer {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     font-variant-numeric: tabular-nums;
-    min-width: 88px;
-    display: inline-block;
+    color: #ffffff;
+    white-space: nowrap;
   }
   #hv2-strip-{{ sid }} .hv2-strip-msg {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   /* ── Hero ────────────────────────────────────────────────── */
@@ -198,22 +198,25 @@
     opacity: 0.92;
   }
 
-  /* Boton — borde fino sin relleno, igual que en la foto */
+  /* Boton — blanco solido, negro al hover */
   #hv2-hero-{{ sid }} .hv2-btn {
     display: inline-block;
-    border-width: 1px;
-    border-style: solid;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
     text-decoration: none;
-    padding: 11px 26px;
+    padding: 13px 30px;
     font-size: 10px;
-    font-weight: 400;
+    font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    transition: background 0.25s, color 0.25s;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
     cursor: pointer;
   }
   #hv2-hero-{{ sid }} .hv2-btn:hover {
-    filter: invert(1);
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
   }
 
   /* ── Animaciones fade-up en cascada ──────────────────────── */
