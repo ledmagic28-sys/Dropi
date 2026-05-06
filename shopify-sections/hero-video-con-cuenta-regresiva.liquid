@@ -1,271 +1,293 @@
-{% comment %}
-  Sección: Hero con vídeo y cuenta regresiva
-  Instrucciones de uso:
-  1. Copia este archivo en la carpeta /sections/ de tu tema Shopify.
-  2. En el editor de temas, añade la sección "Hero con vídeo y cuenta regresiva".
-  3. Configura el vídeo, los textos y la fecha límite del contador desde el panel de ajustes.
-{% endcomment %}
-
 {%- liquid
-  assign section_id = 'hero-video-' | append: section.id
+  assign sid = section.id
+  assign s   = section.settings
 -%}
 
-{% if section.settings.mostrar_barra_contador %}
-<div class="hvc-barra-contador" id="hvc-barra-{{ section.id }}">
-  <div class="hvc-barra-inner">
-    <span class="hvc-timer" id="hvc-timer-{{ section.id }}">00:00:00:00</span>
-    <span class="hvc-barra-texto">{{ section.settings.texto_barra }}</span>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;600&display=swap" rel="stylesheet">
+
+{% if s.mostrar_barra_contador %}
+<div class="hv2-strip" id="hv2-strip-{{ sid }}"
+  style="background:{{ s.color_barra_fondo }};color:{{ s.color_barra_texto }};">
+  <div class="hv2-strip-inner">
+    <span class="hv2-timer" id="hv2-timer-{{ sid }}">00:00:00:00</span>
+    <span class="hv2-strip-msg" style="color:{{ s.color_alerta }};">
+      {{ s.texto_barra }}
+    </span>
   </div>
 </div>
 {% endif %}
 
-<section
-  class="hvc-seccion{% if section.settings.altura_pantalla_completa %} hvc-pantalla-completa{% endif %}"
-  id="{{ section_id }}"
-  style="
-    min-height: {{ section.settings.altura_minima }}px;
-    --hvc-overlay-opacidad: {{ section.settings.opacidad_overlay | divided_by: 100.0 }};
-    --hvc-color-overlay: {{ section.settings.color_overlay }};
-    --hvc-color-texto: {{ section.settings.color_texto }};
-    --hvc-color-boton-bg: {{ section.settings.color_boton_fondo }};
-    --hvc-color-boton-texto: {{ section.settings.color_boton_texto }};
-    --hvc-color-barra-bg: {{ section.settings.color_barra_fondo }};
-    --hvc-color-barra-texto: {{ section.settings.color_barra_texto }};
-    --hvc-color-timer: {{ section.settings.color_timer }};
-  "
->
-  <!-- Fondo de vídeo -->
-  <div class="hvc-video-wrapper">
-    {%- if section.settings.video_url != blank -%}
-      <video
-        class="hvc-video"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto"
-      >
-        <source src="{{ section.settings.video_url }}" type="video/mp4">
+<div class="hv2-hero{% if s.pantalla_completa %} hv2-full{% endif %}"
+  id="hv2-hero-{{ sid }}"
+  style="min-height:{{ s.altura_minima }}px;">
+
+  <!-- Fondo: video o imagen -->
+  <div class="hv2-media">
+    {%- if s.video_url != blank -%}
+      <video class="hv2-video" autoplay muted loop playsinline preload="auto">
+        <source src="{{ s.video_url }}" type="video/mp4">
       </video>
-    {%- elsif section.settings.imagen_fallback != blank -%}
-      <img
-        class="hvc-img-fallback"
-        src="{{ section.settings.imagen_fallback | img_url: 'master' }}"
-        alt="{{ section.settings.titulo | escape }}"
-        loading="lazy"
-      >
+    {%- elsif s.imagen_fallback != blank -%}
+      <img class="hv2-video"
+        src="{{ s.imagen_fallback | img_url: 'master' }}"
+        alt="{{ s.titulo | escape }}"
+        loading="lazy">
     {%- else -%}
-      <div class="hvc-placeholder"></div>
+      <div class="hv2-placeholder"></div>
     {%- endif -%}
-    <div class="hvc-overlay"></div>
   </div>
+
+  <!-- Degradado suave solo abajo -->
+  <div class="hv2-gradient"
+    style="--hv2-grad-color:{{ s.color_overlay }};--hv2-grad-op:{{ s.opacidad_overlay | divided_by: 100.0 }};"></div>
 
   <!-- Contenido -->
-  <div class="hvc-contenido">
-    {%- if section.settings.etiqueta != blank -%}
-      <p class="hvc-etiqueta">{{ section.settings.etiqueta }}</p>
+  <div class="hv2-content">
+
+    {%- if s.etiqueta != blank -%}
+      <p class="hv2-label hv2-fade hv2-d1" style="color:{{ s.color_texto }};">
+        {{ s.etiqueta }}
+      </p>
     {%- endif -%}
 
-    {%- if section.settings.titulo != blank -%}
-      <h1 class="hvc-titulo">{{ section.settings.titulo }}</h1>
+    {%- if s.titulo != blank -%}
+      <h1 class="hv2-title hv2-fade hv2-d2" style="color:{{ s.color_texto }};">
+        {{ s.titulo }}
+      </h1>
     {%- endif -%}
 
-    {%- if section.settings.subtitulo != blank -%}
-      <p class="hvc-subtitulo">{{ section.settings.subtitulo }}</p>
+    {%- if s.subtitulo != blank -%}
+      <p class="hv2-sub hv2-fade hv2-d3" style="color:{{ s.color_texto }};">
+        {{ s.subtitulo }}
+      </p>
     {%- endif -%}
 
-    {%- if section.settings.texto_boton != blank and section.settings.url_boton != blank -%}
-      <a class="hvc-boton" href="{{ section.settings.url_boton }}">
-        {{ section.settings.texto_boton }}
-      </a>
+    {%- if s.texto_boton != blank and s.url_boton != blank -%}
+      <div class="hv2-fade hv2-d4">
+        <a class="hv2-btn" href="{{ s.url_boton }}"
+          style="border-color:{{ s.color_boton_borde }};color:{{ s.color_boton_texto }};background:{{ s.color_boton_fondo }};">
+          {{ s.texto_boton }}
+        </a>
+      </div>
     {%- endif -%}
+
   </div>
-</section>
+</div>
 
 <style>
-  /* ── Variables y reset ─────────────────────────────────────────── */
-  #{{ section_id }},
-  #hvc-barra-{{ section.id }} {
+  /* ── Fuente global de la sección ─────────────────────────── */
+  #hv2-strip-{{ sid }},
+  #hv2-hero-{{ sid }} {
+    font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     box-sizing: border-box;
   }
+  #hv2-hero-{{ sid }} * { box-sizing: border-box; }
 
-  /* ── Barra de cuenta regresiva ─────────────────────────────────── */
-  #hvc-barra-{{ section.id }} {
+  /* ── Barra urgencia ──────────────────────────────────────── */
+  #hv2-strip-{{ sid }} {
     width: 100%;
-    background-color: var(--hvc-color-barra-bg);
-    color: var(--hvc-color-barra-texto);
+    padding: 9px 14px;
     text-align: center;
-    padding: 10px 16px;
-    font-family: inherit;
-    z-index: 100;
     position: relative;
+    z-index: 10;
   }
-
-  #hvc-barra-{{ section.id }} .hvc-barra-inner {
-    display: flex;
+  #hv2-strip-{{ sid }} .hv2-strip-inner {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
+    justify-content: center;
   }
-
-  #hvc-barra-{{ section.id }} .hvc-timer {
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--hvc-color-timer);
+  #hv2-strip-{{ sid }} .hv2-timer {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
     font-variant-numeric: tabular-nums;
-    min-width: 110px;
+    min-width: 88px;
     display: inline-block;
   }
-
-  #hvc-barra-{{ section.id }} .hvc-barra-texto {
-    font-size: 0.85rem;
+  #hv2-strip-{{ sid }} .hv2-strip-msg {
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
   }
 
-  /* ── Sección principal ─────────────────────────────────────────── */
-  #{{ section_id }} {
+  /* ── Hero ────────────────────────────────────────────────── */
+  #hv2-hero-{{ sid }} {
     position: relative;
+    width: 100%;
+    height: 85vh;
     overflow: hidden;
     display: flex;
     align-items: flex-end;
+    background: #e8e6e3;
   }
+  #hv2-hero-{{ sid }}.hv2-full { height: 100vh !important; }
 
-  #{{ section_id }}.hvc-pantalla-completa {
-    min-height: 100vh !important;
-  }
-
-  /* ── Vídeo / imagen de fondo ───────────────────────────────────── */
-  #{{ section_id }} .hvc-video-wrapper {
+  /* ── Media (video / imagen) ──────────────────────────────── */
+  #hv2-hero-{{ sid }} .hv2-media {
     position: absolute;
     inset: 0;
     z-index: 0;
   }
-
-  #{{ section_id }} .hvc-video,
-  #{{ section_id }} .hvc-img-fallback {
+  #hv2-hero-{{ sid }} .hv2-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: center top;
     display: block;
   }
-
-  #{{ section_id }} .hvc-placeholder {
+  #hv2-hero-{{ sid }} .hv2-placeholder {
     width: 100%;
     height: 100%;
     background: #1a1a1a;
   }
 
-  #{{ section_id }} .hvc-overlay {
+  /* ── Degradado solo abajo (como en la foto) ──────────────── */
+  #hv2-hero-{{ sid }} .hv2-gradient {
     position: absolute;
     inset: 0;
-    background-color: var(--hvc-color-overlay);
-    opacity: var(--hvc-overlay-opacidad);
-  }
-
-  /* ── Contenido ─────────────────────────────────────────────────── */
-  #{{ section_id }} .hvc-contenido {
-    position: relative;
     z-index: 1;
-    padding: 48px 40px;
-    max-width: 760px;
-    color: var(--hvc-color-texto);
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--hv2-grad-color) calc(var(--hv2-grad-op) * 100%), transparent) 0%,
+      color-mix(in srgb, var(--hv2-grad-color) calc(var(--hv2-grad-op) * 30%), transparent)  40%,
+      transparent 70%
+    );
   }
 
-  #{{ section_id }} .hvc-etiqueta {
-    font-size: 0.75rem;
+  /* ── Contenido ───────────────────────────────────────────── */
+  #hv2-hero-{{ sid }} .hv2-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 4% 7%;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  /* Etiqueta opcional arriba */
+  #hv2-hero-{{ sid }} .hv2-label {
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    margin: 0 0 10px 0;
+    opacity: 0.8;
+  }
+
+  /* Titulo — ultra fino igual que en la foto */
+  #hv2-hero-{{ sid }} .hv2-title {
+    font-size: clamp(38px, 7.5vw, 82px);
+    font-weight: 200;
+    line-height: 1.04;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin: 0 0 14px 0;
+  }
+
+  /* Subtitulo — muy pequeño, muy espaciado */
+  #hv2-hero-{{ sid }} .hv2-sub {
+    font-size: clamp(9px, 1vw, 11px);
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin: 0 0 28px 0;
+    opacity: 0.92;
+  }
+
+  /* Boton — borde fino sin relleno, igual que en la foto */
+  #hv2-hero-{{ sid }} .hv2-btn {
+    display: inline-block;
+    border-width: 1px;
+    border-style: solid;
+    text-decoration: none;
+    padding: 11px 26px;
+    font-size: 10px;
+    font-weight: 400;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    margin: 0 0 12px;
-    opacity: 0.85;
-  }
-
-  #{{ section_id }} .hvc-titulo {
-    font-size: clamp(2.4rem, 6vw, 5rem);
-    font-weight: 300;
-    letter-spacing: -0.01em;
-    line-height: 1.05;
-    margin: 0 0 16px;
-    text-transform: uppercase;
-  }
-
-  #{{ section_id }} .hvc-subtitulo {
-    font-size: clamp(0.75rem, 1.5vw, 0.9rem);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    margin: 0 0 28px;
-    opacity: 0.9;
-  }
-
-  #{{ section_id }} .hvc-boton {
-    display: inline-block;
-    padding: 12px 28px;
-    border: 1px solid var(--hvc-color-boton-texto);
-    background-color: var(--hvc-color-boton-bg);
-    color: var(--hvc-color-boton-texto);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    text-decoration: none;
     transition: background 0.25s, color 0.25s;
     cursor: pointer;
   }
-
-  #{{ section_id }} .hvc-boton:hover {
-    background-color: var(--hvc-color-boton-texto);
-    color: var(--hvc-color-boton-bg);
+  #hv2-hero-{{ sid }} .hv2-btn:hover {
+    filter: invert(1);
   }
 
-  /* ── Responsive ────────────────────────────────────────────────── */
+  /* ── Animaciones fade-up en cascada ──────────────────────── */
+  #hv2-hero-{{ sid }} .hv2-fade {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: hv2FadeUp 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  #hv2-hero-{{ sid }} .hv2-d1 { animation-delay: 0.1s; }
+  #hv2-hero-{{ sid }} .hv2-d2 { animation-delay: 0.25s; }
+  #hv2-hero-{{ sid }} .hv2-d3 { animation-delay: 0.45s; }
+  #hv2-hero-{{ sid }} .hv2-d4 { animation-delay: 0.65s; }
+
+  @keyframes hv2FadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Movil ───────────────────────────────────────────────── */
   @media (max-width: 768px) {
-    #{{ section_id }} .hvc-contenido {
-      padding: 36px 20px;
-    }
+    #hv2-strip-{{ sid }} { font-size: 9px; padding: 8px 10px; }
+    #hv2-hero-{{ sid }} { height: 80vh; min-height: 460px !important; }
+    #hv2-hero-{{ sid }} .hv2-content { padding: 0 18px 10%; }
+    #hv2-hero-{{ sid }} .hv2-title { font-size: 40px; }
+    #hv2-hero-{{ sid }} .hv2-sub { font-size: 9px; letter-spacing: 0.14em; }
+    #hv2-hero-{{ sid }} .hv2-btn { display: block; text-align: center; padding: 14px 0; }
   }
 </style>
 
 <script>
 (function () {
-  {% if section.settings.mostrar_barra_contador %}
-  var timerEl   = document.getElementById('hvc-timer-{{ section.id }}');
-  var barraEl   = document.getElementById('hvc-barra-{{ section.id }}');
-  var endDate   = new Date('{{ section.settings.fecha_fin_contador }}').getTime();
-  var intervalo;
+  {% if s.mostrar_barra_contador %}
+  var el     = document.getElementById('hv2-timer-{{ sid }}');
+  var barraEl = document.getElementById('hv2-strip-{{ sid }}');
+  if (!el) return;
 
-  function pad(n) { return String(n).padStart(2, '0'); }
+  {% if s.modo_contador == 'evergreen' %}
+  /* Modo evergreen: cuenta desde N segundos y se reinicia */
+  var secs = {{ s.evergreen_horas }} * 3600 + {{ s.evergreen_minutos }} * 60;
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function tick() {
+    if (secs <= 0) secs = {{ s.evergreen_horas }} * 3600 + {{ s.evergreen_minutos }} * 60;
+    var d = Math.floor(secs / 86400);
+    var h = Math.floor((secs % 86400) / 3600);
+    var m = Math.floor((secs % 3600) / 60);
+    var sv = secs % 60;
+    el.textContent = pad(d)+':'+pad(h)+':'+pad(m)+':'+pad(sv);
+    secs--;
+  }
+  tick();
+  setInterval(tick, 1000);
 
-  function actualizar() {
-    var ahora     = Date.now();
-    var diferencia = endDate - ahora;
-
-    if (diferencia <= 0) {
-      clearInterval(intervalo);
-      if (timerEl) timerEl.textContent = '00:00:00:00';
-      {% if section.settings.ocultar_barra_al_terminar %}
+  {% else %}
+  /* Modo fecha fija */
+  var endTs = new Date('{{ s.fecha_fin_contador }}').getTime();
+  function pad(n) { return String(n).padStart(2,'0'); }
+  function tick() {
+    var diff = endTs - Date.now();
+    if (diff <= 0) {
+      el.textContent = '00:00:00:00';
+      {% if s.ocultar_barra_al_terminar %}
       if (barraEl) barraEl.style.display = 'none';
       {% endif %}
       return;
     }
-
-    var dias    = Math.floor(diferencia / 86400000);
-    var horas   = Math.floor((diferencia % 86400000) / 3600000);
-    var minutos = Math.floor((diferencia % 3600000) / 60000);
-    var segundos = Math.floor((diferencia % 60000) / 1000);
-
-    if (timerEl) {
-      timerEl.textContent = pad(dias) + ':' + pad(horas) + ':' + pad(minutos) + ':' + pad(segundos);
-    }
+    var d = Math.floor(diff / 86400000);
+    var h = Math.floor((diff % 86400000) / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var sv = Math.floor((diff % 60000) / 1000);
+    el.textContent = pad(d)+':'+pad(h)+':'+pad(m)+':'+pad(sv);
   }
+  tick();
+  setInterval(tick, 1000);
+  {% endif %}
 
-  if (timerEl && !isNaN(endDate)) {
-    actualizar();
-    intervalo = setInterval(actualizar, 1000);
-  }
   {% endif %}
 })();
 </script>
@@ -274,18 +296,18 @@
 {
   "name": "Hero Video Contador",
   "tag": "div",
-  "class": "hvc-wrapper",
+  "class": "hv2-wrapper",
   "settings": [
     {
       "type": "header",
-      "content": "Video / imagen de fondo"
+      "content": "Video y fondo"
     },
     {
       "type": "text",
       "id": "video_url",
-      "label": "URL del video (MP4)",
+      "label": "URL del video (.mp4)",
       "default": "https://example.com/video.mp4",
-      "info": "Sube el video a Contenido > Archivos y pega la URL directa .mp4"
+      "info": "Sube el video en Contenido > Archivos y pega la URL directa"
     },
     {
       "type": "image_picker",
@@ -294,7 +316,7 @@
     },
     {
       "type": "checkbox",
-      "id": "altura_pantalla_completa",
+      "id": "pantalla_completa",
       "label": "Altura pantalla completa",
       "default": false
     },
@@ -303,18 +325,37 @@
       "id": "altura_minima",
       "label": "Altura minima (px)",
       "min": 300,
-      "max": 900,
+      "max": 1000,
       "step": 10,
-      "default": 600
+      "default": 620
     },
     {
       "type": "header",
-      "content": "Textos del hero"
+      "content": "Overlay del video"
+    },
+    {
+      "type": "color",
+      "id": "color_overlay",
+      "label": "Color del degradado",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "opacidad_overlay",
+      "label": "Intensidad del degradado (%)",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 55
+    },
+    {
+      "type": "header",
+      "content": "Textos"
     },
     {
       "type": "text",
       "id": "etiqueta",
-      "label": "Etiqueta pequeña",
+      "label": "Etiqueta superior (opcional)",
       "default": "NUEVA COLECCION"
     },
     {
@@ -330,10 +371,20 @@
       "default": "HASTA UN 70% DE DESCUENTO EN LAS MEJORES PRENDAS"
     },
     {
+      "type": "color",
+      "id": "color_texto",
+      "label": "Color del texto",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Boton"
+    },
+    {
       "type": "text",
       "id": "texto_boton",
       "label": "Texto del boton",
-      "default": "Ver coleccion"
+      "default": "VER COLECCION"
     },
     {
       "type": "url",
@@ -341,56 +392,15 @@
       "label": "Enlace del boton"
     },
     {
-      "type": "header",
-      "content": "Barra de cuenta regresiva"
-    },
-    {
-      "type": "checkbox",
-      "id": "mostrar_barra_contador",
-      "label": "Mostrar barra",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "fecha_fin_contador",
-      "label": "Fecha y hora de fin (AAAA-MM-DDTHH:MM:SS)",
-      "default": "2026-05-10T23:59:59"
-    },
-    {
-      "type": "text",
-      "id": "texto_barra",
-      "label": "Texto de la barra",
-      "default": "NUESTRA MAYOR OFERTA TERMINA PRONTO"
-    },
-    {
-      "type": "checkbox",
-      "id": "ocultar_barra_al_terminar",
-      "label": "Ocultar barra al llegar a cero",
-      "default": false
-    },
-    {
-      "type": "header",
-      "content": "Colores"
+      "type": "color",
+      "id": "color_boton_borde",
+      "label": "Color del borde",
+      "default": "#ffffff"
     },
     {
       "type": "color",
-      "id": "color_overlay",
-      "label": "Color overlay del video",
-      "default": "#000000"
-    },
-    {
-      "type": "range",
-      "id": "opacidad_overlay",
-      "label": "Opacidad overlay (%)",
-      "min": 0,
-      "max": 90,
-      "step": 5,
-      "default": 30
-    },
-    {
-      "type": "color",
-      "id": "color_texto",
-      "label": "Color texto del hero",
+      "id": "color_boton_texto",
+      "label": "Color del texto del boton",
       "default": "#ffffff"
     },
     {
@@ -400,28 +410,79 @@
       "default": "#000000"
     },
     {
+      "type": "header",
+      "content": "Barra y contador"
+    },
+    {
+      "type": "checkbox",
+      "id": "mostrar_barra_contador",
+      "label": "Mostrar barra de urgencia",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "texto_barra",
+      "label": "Texto de la barra",
+      "default": "NUESTRA MAYOR REBAJA TERMINA PRONTO"
+    },
+    {
       "type": "color",
-      "id": "color_boton_texto",
-      "label": "Texto y borde del boton",
-      "default": "#ffffff"
+      "id": "color_alerta",
+      "label": "Color del texto de alerta",
+      "default": "#ff2020"
     },
     {
       "type": "color",
       "id": "color_barra_fondo",
       "label": "Fondo de la barra",
-      "default": "#111111"
+      "default": "#000000"
     },
     {
       "type": "color",
       "id": "color_barra_texto",
-      "label": "Texto de la barra",
+      "label": "Color del timer",
       "default": "#ffffff"
     },
     {
-      "type": "color",
-      "id": "color_timer",
-      "label": "Color del temporizador",
-      "default": "#ff3333"
+      "type": "select",
+      "id": "modo_contador",
+      "label": "Tipo de contador",
+      "options": [
+        { "value": "fecha", "label": "Fecha fija" },
+        { "value": "evergreen", "label": "Evergreen (se reinicia solo)" }
+      ],
+      "default": "fecha"
+    },
+    {
+      "type": "text",
+      "id": "fecha_fin_contador",
+      "label": "Fecha de fin (solo modo Fecha fija)",
+      "default": "2026-06-01T23:59:59",
+      "info": "Formato: AAAA-MM-DDTHH:MM:SS"
+    },
+    {
+      "type": "range",
+      "id": "evergreen_horas",
+      "label": "Horas del contador Evergreen",
+      "min": 1,
+      "max": 72,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "evergreen_minutos",
+      "label": "Minutos extra (Evergreen)",
+      "min": 0,
+      "max": 59,
+      "step": 1,
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "ocultar_barra_al_terminar",
+      "label": "Ocultar barra al llegar a cero",
+      "default": false
     }
   ],
   "presets": [
