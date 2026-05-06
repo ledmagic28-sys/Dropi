@@ -1,0 +1,434 @@
+{% comment %}
+  Sección: Hero con vídeo y cuenta regresiva
+  Instrucciones de uso:
+  1. Copia este archivo en la carpeta /sections/ de tu tema Shopify.
+  2. En el editor de temas, añade la sección "Hero con vídeo y cuenta regresiva".
+  3. Configura el vídeo, los textos y la fecha límite del contador desde el panel de ajustes.
+{% endcomment %}
+
+{%- liquid
+  assign section_id = 'hero-video-' | append: section.id
+-%}
+
+{% if section.settings.mostrar_barra_contador %}
+<div class="hvc-barra-contador" id="hvc-barra-{{ section.id }}">
+  <div class="hvc-barra-inner">
+    <span class="hvc-timer" id="hvc-timer-{{ section.id }}">00:00:00:00</span>
+    <span class="hvc-barra-texto">{{ section.settings.texto_barra }}</span>
+  </div>
+</div>
+{% endif %}
+
+<section
+  class="hvc-seccion{% if section.settings.altura_pantalla_completa %} hvc-pantalla-completa{% endif %}"
+  id="{{ section_id }}"
+  style="
+    min-height: {{ section.settings.altura_minima }}px;
+    --hvc-overlay-opacidad: {{ section.settings.opacidad_overlay | divided_by: 100.0 }};
+    --hvc-color-overlay: {{ section.settings.color_overlay }};
+    --hvc-color-texto: {{ section.settings.color_texto }};
+    --hvc-color-boton-bg: {{ section.settings.color_boton_fondo }};
+    --hvc-color-boton-texto: {{ section.settings.color_boton_texto }};
+    --hvc-color-barra-bg: {{ section.settings.color_barra_fondo }};
+    --hvc-color-barra-texto: {{ section.settings.color_barra_texto }};
+    --hvc-color-timer: {{ section.settings.color_timer }};
+  "
+>
+  <!-- Fondo de vídeo -->
+  <div class="hvc-video-wrapper">
+    {%- if section.settings.video_url != blank -%}
+      <video
+        class="hvc-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+      >
+        <source src="{{ section.settings.video_url }}" type="video/mp4">
+      </video>
+    {%- elsif section.settings.imagen_fallback != blank -%}
+      <img
+        class="hvc-img-fallback"
+        src="{{ section.settings.imagen_fallback | img_url: 'master' }}"
+        alt="{{ section.settings.titulo | escape }}"
+        loading="lazy"
+      >
+    {%- else -%}
+      <div class="hvc-placeholder"></div>
+    {%- endif -%}
+    <div class="hvc-overlay"></div>
+  </div>
+
+  <!-- Contenido -->
+  <div class="hvc-contenido">
+    {%- if section.settings.etiqueta != blank -%}
+      <p class="hvc-etiqueta">{{ section.settings.etiqueta }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.titulo != blank -%}
+      <h1 class="hvc-titulo">{{ section.settings.titulo }}</h1>
+    {%- endif -%}
+
+    {%- if section.settings.subtitulo != blank -%}
+      <p class="hvc-subtitulo">{{ section.settings.subtitulo }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.texto_boton != blank and section.settings.url_boton != blank -%}
+      <a class="hvc-boton" href="{{ section.settings.url_boton }}">
+        {{ section.settings.texto_boton }}
+      </a>
+    {%- endif -%}
+  </div>
+</section>
+
+<style>
+  /* ── Variables y reset ─────────────────────────────────────────── */
+  #{{ section_id }},
+  #hvc-barra-{{ section.id }} {
+    box-sizing: border-box;
+  }
+
+  /* ── Barra de cuenta regresiva ─────────────────────────────────── */
+  #hvc-barra-{{ section.id }} {
+    width: 100%;
+    background-color: var(--hvc-color-barra-bg);
+    color: var(--hvc-color-barra-texto);
+    text-align: center;
+    padding: 10px 16px;
+    font-family: inherit;
+    z-index: 100;
+    position: relative;
+  }
+
+  #hvc-barra-{{ section.id }} .hvc-barra-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  #hvc-barra-{{ section.id }} .hvc-timer {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--hvc-color-timer);
+    font-variant-numeric: tabular-nums;
+    min-width: 110px;
+    display: inline-block;
+  }
+
+  #hvc-barra-{{ section.id }} .hvc-barra-texto {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── Sección principal ─────────────────────────────────────────── */
+  #{{ section_id }} {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  #{{ section_id }}.hvc-pantalla-completa {
+    min-height: 100vh !important;
+  }
+
+  /* ── Vídeo / imagen de fondo ───────────────────────────────────── */
+  #{{ section_id }} .hvc-video-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  #{{ section_id }} .hvc-video,
+  #{{ section_id }} .hvc-img-fallback {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  #{{ section_id }} .hvc-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #1a1a1a;
+  }
+
+  #{{ section_id }} .hvc-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: var(--hvc-color-overlay);
+    opacity: var(--hvc-overlay-opacidad);
+  }
+
+  /* ── Contenido ─────────────────────────────────────────────────── */
+  #{{ section_id }} .hvc-contenido {
+    position: relative;
+    z-index: 1;
+    padding: 48px 40px;
+    max-width: 760px;
+    color: var(--hvc-color-texto);
+  }
+
+  #{{ section_id }} .hvc-etiqueta {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    opacity: 0.85;
+  }
+
+  #{{ section_id }} .hvc-titulo {
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    margin: 0 0 16px;
+    text-transform: uppercase;
+  }
+
+  #{{ section_id }} .hvc-subtitulo {
+    font-size: clamp(0.75rem, 1.5vw, 0.9rem);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 28px;
+    opacity: 0.9;
+  }
+
+  #{{ section_id }} .hvc-boton {
+    display: inline-block;
+    padding: 12px 28px;
+    border: 1px solid var(--hvc-color-boton-texto);
+    background-color: var(--hvc-color-boton-bg);
+    color: var(--hvc-color-boton-texto);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.25s, color 0.25s;
+    cursor: pointer;
+  }
+
+  #{{ section_id }} .hvc-boton:hover {
+    background-color: var(--hvc-color-boton-texto);
+    color: var(--hvc-color-boton-bg);
+  }
+
+  /* ── Responsive ────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    #{{ section_id }} .hvc-contenido {
+      padding: 36px 20px;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  {% if section.settings.mostrar_barra_contador %}
+  var timerEl   = document.getElementById('hvc-timer-{{ section.id }}');
+  var barraEl   = document.getElementById('hvc-barra-{{ section.id }}');
+  var endDate   = new Date('{{ section.settings.fecha_fin_contador }}').getTime();
+  var intervalo;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function actualizar() {
+    var ahora     = Date.now();
+    var diferencia = endDate - ahora;
+
+    if (diferencia <= 0) {
+      clearInterval(intervalo);
+      if (timerEl) timerEl.textContent = '00:00:00:00';
+      {% if section.settings.ocultar_barra_al_terminar %}
+      if (barraEl) barraEl.style.display = 'none';
+      {% endif %}
+      return;
+    }
+
+    var dias    = Math.floor(diferencia / 86400000);
+    var horas   = Math.floor((diferencia % 86400000) / 3600000);
+    var minutos = Math.floor((diferencia % 3600000) / 60000);
+    var segundos = Math.floor((diferencia % 60000) / 1000);
+
+    if (timerEl) {
+      timerEl.textContent = pad(dias) + ':' + pad(horas) + ':' + pad(minutos) + ':' + pad(segundos);
+    }
+  }
+
+  if (timerEl && !isNaN(endDate)) {
+    actualizar();
+    intervalo = setInterval(actualizar, 1000);
+  }
+  {% endif %}
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Hero vídeo + cuenta regresiva",
+  "tag": "div",
+  "class": "hvc-wrapper",
+  "settings": [
+    {
+      "type": "header",
+      "content": "🎬 Vídeo / imagen de fondo"
+    },
+    {
+      "type": "text",
+      "id": "video_url",
+      "label": "URL del vídeo (MP4)",
+      "info": "Sube el vídeo a los archivos de tu tienda (Contenido → Archivos) y pega aquí la URL directa .mp4"
+    },
+    {
+      "type": "image_picker",
+      "id": "imagen_fallback",
+      "label": "Imagen de respaldo",
+      "info": "Se muestra si no hay vídeo o en dispositivos que no lo soportan."
+    },
+    {
+      "type": "checkbox",
+      "id": "altura_pantalla_completa",
+      "label": "Altura pantalla completa",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "altura_minima",
+      "label": "Altura mínima (px)",
+      "min": 300,
+      "max": 900,
+      "step": 10,
+      "default": 600
+    },
+    {
+      "type": "header",
+      "content": "✏️ Textos del héroe"
+    },
+    {
+      "type": "text",
+      "id": "etiqueta",
+      "label": "Etiqueta pequeña (opcional)",
+      "default": ""
+    },
+    {
+      "type": "text",
+      "id": "titulo",
+      "label": "Título principal",
+      "default": "REBAJAS DE PRIMAVERA '26"
+    },
+    {
+      "type": "text",
+      "id": "subtitulo",
+      "label": "Subtítulo",
+      "default": "HASTA UN 70 % DE DESCUENTO EN LAS MEJORES PRENDAS"
+    },
+    {
+      "type": "text",
+      "id": "texto_boton",
+      "label": "Texto del botón",
+      "default": "Ver colección"
+    },
+    {
+      "type": "url",
+      "id": "url_boton",
+      "label": "Enlace del botón"
+    },
+    {
+      "type": "header",
+      "content": "⏱️ Barra de cuenta regresiva"
+    },
+    {
+      "type": "checkbox",
+      "id": "mostrar_barra_contador",
+      "label": "Mostrar barra",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "fecha_fin_contador",
+      "label": "Fecha y hora de fin",
+      "default": "2026-05-10T23:59:59",
+      "info": "Formato ISO 8601: AAAA-MM-DDTHH:MM:SS (hora local del navegador del visitante)"
+    },
+    {
+      "type": "text",
+      "id": "texto_barra",
+      "label": "Texto de la barra",
+      "default": "¡NUESTRA MAYOR OFERTA DE TODOS LOS TIEMPOS TERMINA PRONTO!"
+    },
+    {
+      "type": "checkbox",
+      "id": "ocultar_barra_al_terminar",
+      "label": "Ocultar barra cuando el contador llegue a cero",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "🎨 Colores"
+    },
+    {
+      "type": "color",
+      "id": "color_overlay",
+      "label": "Color del overlay de vídeo",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "opacidad_overlay",
+      "label": "Opacidad del overlay (%)",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "default": 30
+    },
+    {
+      "type": "color",
+      "id": "color_texto",
+      "label": "Color del texto del héroe",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_boton_fondo",
+      "label": "Fondo del botón",
+      "default": "#00000000"
+    },
+    {
+      "type": "color",
+      "id": "color_boton_texto",
+      "label": "Texto y borde del botón",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_barra_fondo",
+      "label": "Fondo de la barra",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "color_barra_texto",
+      "label": "Texto de la barra",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_timer",
+      "label": "Color del temporizador",
+      "default": "#ff3333"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero vídeo + cuenta regresiva"
+    }
+  ]
+}
+{% endschema %}
