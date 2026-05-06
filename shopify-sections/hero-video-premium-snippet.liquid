@@ -1,175 +1,214 @@
 {% if template == 'index' %}
-<div class="premium-hero-block">
 
-  <!-- 1. BARRA DE URGENCIA (Fina, agresiva, arriba del todo) -->
-  <div class="urgency-strip">
-    <div class="urgency-track">
-      <span class="timer-text" id="master-timer">00:09:39:54</span>
-      <span class="alert-text">¡NUESTRA MAYOR REBAJA DE LA HISTORIA TERMINA PRONTO!</span>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;600&display=swap" rel="stylesheet">
+
+<div class="phv-wrap">
+
+  <!-- BARRA URGENCIA + CONTADOR -->
+  <div class="phv-strip">
+    <div class="phv-strip-inner">
+      <span class="phv-timer" id="master-timer">00:09:39:54</span>
+      <span class="phv-strip-msg">¡NUESTRA MAYOR REBAJA DE LA HISTORIA TERMINA PRONTO!</span>
     </div>
   </div>
 
-  <!-- 2. ZONA DE VÍDEO CON ANIMACIONES -->
-  <div class="video-zone">
-    <!-- Filtro oscuro para que el texto resalte siempre -->
-    <div class="dark-gradient-overlay"></div>
+  <!-- HERO CON VÍDEO -->
+  <div class="phv-hero">
 
-    <!-- TU VÍDEO (Asegúrate de pegar tu enlace .mp4 aquí) -->
-    <video autoplay loop muted playsinline class="bg-video-full">
+    <!-- Vídeo de fondo — cambia el src por tu .mp4 -->
+    <video autoplay loop muted playsinline class="phv-video">
       <source src="https://tu-enlace-al-video.mp4" type="video/mp4">
     </video>
 
-    <!-- TEXTOS CON ANIMACIÓN EN CASCADA -->
-    <div class="animated-content">
-      <p class="hero-subtitle fade-up delay-1">HASTA UN 70% DE DESCUENTO</p>
-      <h1 class="hero-title fade-up delay-2">REBAJAS DE<br>PRIMAVERA '26</h1>
-      <div class="fade-up delay-3">
-        <a href="/collections/all" class="hero-btn-action">VER COLECCIÓN</a>
+    <!-- Degradado solo en la parte inferior para que el texto se lea -->
+    <div class="phv-gradient"></div>
+
+    <!-- Contenido animado -->
+    <div class="phv-content">
+      <h1 class="phv-title phv-fade delay-1">
+        REBAJAS DE<br>PRIMAVERA '26
+      </h1>
+      <p class="phv-sub phv-fade delay-2">
+        HASTA UN 70 % DE DESCUENTO EN LAS MEJORES PRENDAS
+      </p>
+      <div class="phv-fade delay-3">
+        <a href="/collections/all" class="phv-btn">VER COLECCIÓN</a>
       </div>
     </div>
+
   </div>
 
 </div>
 
 <style>
-  /* --- BASE --- */
-  .premium-hero-block {
-    width: 100%;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background: #000;
+  /* ── Fuente ──────────────────────────────────────────────── */
+  .phv-wrap,
+  .phv-wrap * {
+    font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    box-sizing: border-box;
   }
 
-  /* --- BARRA DE URGENCIA --- */
-  .urgency-strip {
+  /* ── Barra de urgencia ───────────────────────────────────── */
+  .phv-strip {
+    width: 100%;
     background: #000;
     color: #fff;
+    padding: 9px 12px;
     text-align: center;
-    padding: 10px 5px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
   }
-  .urgency-track {
-    display: flex;
-    gap: 8px;
+  .phv-strip-inner {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
     flex-wrap: wrap;
+    justify-content: center;
   }
-  .alert-text { color: #ff0000; text-transform: uppercase; }
+  .phv-timer {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+    min-width: 88px;
+    display: inline-block;
+  }
+  .phv-strip-msg {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ff2020;
+  }
 
-  /* --- ZONA VÍDEO --- */
-  .video-zone {
+  /* ── Hero ────────────────────────────────────────────────── */
+  .phv-hero {
     position: relative;
     width: 100%;
-    /* Ocupa el 85% de la pantalla para que se vea un poco de lo de abajo e invite a hacer scroll */
     height: 85vh;
-    min-height: 500px;
+    min-height: 520px;
     overflow: hidden;
+    background: #e8e6e3; /* color base mientras carga el vídeo */
   }
-  .bg-video-full {
+
+  /* ── Vídeo ───────────────────────────────────────────────── */
+  .phv-video {
     position: absolute;
-    top: 0; left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center top;
+  }
+
+  /* ── Degradado: solo abajo, como en la foto ──────────────── */
+  .phv-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.52) 0%,
+      rgba(0, 0, 0, 0.18) 35%,
+      rgba(0, 0, 0, 0.00) 65%
+    );
     z-index: 1;
   }
-  /* Degradado sutil de negro a transparente */
-  .dark-gradient-overlay {
+
+  /* ── Contenido de texto ──────────────────────────────────── */
+  .phv-content {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0) 100%);
+    bottom: 7%;
+    left: 4%;
     z-index: 2;
-  }
-
-  /* --- TEXTOS Y ANIMACIÓN --- */
-  .animated-content {
-    position: absolute;
-    bottom: 8%;
-    left: 5%;
-    z-index: 3;
     color: #fff;
-    width: 90%;
-    max-width: 600px;
+    max-width: 680px;
+    width: 92%;
   }
 
-  .hero-subtitle {
-    font-size: 13px;
-    letter-spacing: 2px;
-    margin: 0 0 10px 0;
-    color: rgba(255,255,255,0.9);
-    font-weight: bold;
-  }
-  .hero-title {
-    font-size: clamp(35px, 8vw, 75px);
-    line-height: 1.05;
-    margin: 0 0 30px 0;
-    font-weight: 400;
+  /* Título — ultra fino igual que en la foto */
+  .phv-title {
+    font-size: clamp(38px, 7.5vw, 82px);
+    font-weight: 200;
+    line-height: 1.04;
+    letter-spacing: -0.01em;
     text-transform: uppercase;
+    margin: 0 0 14px 0;
+    color: #fff;
   }
 
-  .hero-btn-action {
+  /* Subtítulo — muy pequeño, espaciado, como en la foto */
+  .phv-sub {
+    font-size: clamp(9px, 1.1vw, 11px);
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin: 0 0 28px 0;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  /* Botón — borde fino blanco, sin relleno, como en la foto */
+  .phv-btn {
     display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    color: #fff;
+    background: transparent;
+    text-decoration: none;
+    padding: 11px 24px;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
+  }
+  .phv-btn:hover {
     background: #fff;
     color: #000;
-    text-decoration: none;
-    padding: 18px 45px;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    transition: 0.3s;
+    border-color: #fff;
   }
-  .hero-btn-action:hover { background: #000; color: #fff; }
 
-  /* LA ANIMACION */
-  .fade-up {
+  /* ── Animación de entrada ────────────────────────────────── */
+  .phv-fade {
     opacity: 0;
-    transform: translateY(30px);
-    animation: fadeInUpAnim 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    transform: translateY(22px);
+    animation: phvFadeUp 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  .delay-1 { animation-delay: 0.15s; }
+  .delay-2 { animation-delay: 0.35s; }
+  .delay-3 { animation-delay: 0.55s; }
+
+  @keyframes phvFadeUp {
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Retrasos para que entren uno detrás de otro */
-  .delay-1 { animation-delay: 0.2s; }
-  .delay-2 { animation-delay: 0.4s; }
-  .delay-3 { animation-delay: 0.6s; }
-
-  @keyframes fadeInUpAnim {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* --- OPTIMIZACIÓN MÓVIL --- */
+  /* ── Móvil ───────────────────────────────────────────────── */
   @media (max-width: 768px) {
-    .urgency-strip { font-size: 10px; padding: 8px 5px; }
-
-    .video-zone { height: 80vh; }
-
-    .animated-content { left: 0; padding: 0 20px; text-align: center; bottom: 8%; }
-    .hero-title { font-size: 42px; margin: 0 0 25px 0; }
-    .hero-subtitle { font-size: 11px; }
-
-    .hero-btn-action { width: 100%; padding: 18px 0; font-size: 14px; }
+    .phv-hero { height: 80vh; min-height: 460px; }
+    .phv-content { left: 0; padding: 0 18px; bottom: 8%; }
+    .phv-title { font-size: 40px; margin-bottom: 12px; }
+    .phv-sub { font-size: 9px; letter-spacing: 0.16em; }
+    .phv-btn { width: 100%; text-align: center; padding: 14px 0; font-size: 10px; }
   }
 </style>
 
 <script>
-  // Contador Evergreen: Se reinicia automáticamente
-  document.addEventListener("DOMContentLoaded", function() {
-    let secs = (9 * 3600) + (39 * 60) + 54;
-    const t = document.getElementById('master-timer');
-    if(!t) return;
-    setInterval(() => {
+  document.addEventListener('DOMContentLoaded', function () {
+    var secs = (9 * 3600) + (39 * 60) + 54;
+    var el   = document.getElementById('master-timer');
+    if (!el) return;
+    function tick() {
       if (secs <= 0) secs = 34794;
-      let d = Math.floor(secs / 86400), h = Math.floor((secs % 86400) / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
-      t.textContent = `${d.toString().padStart(2,'0')}:${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+      var d = Math.floor(secs / 86400);
+      var h = Math.floor((secs % 86400) / 3600);
+      var m = Math.floor((secs % 3600) / 60);
+      var s = secs % 60;
+      el.textContent =
+        pad(d) + ':' + pad(h) + ':' + pad(m) + ':' + pad(s);
       secs--;
-    }, 1000);
+    }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    tick();
+    setInterval(tick, 1000);
   });
 </script>
+
 {% endif %}
